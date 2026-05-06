@@ -3,13 +3,14 @@ import json
 import pandas as pd
 import numpy as np
 from datetime import date, datetime
+from dateutil.relativedelta import relativedelta
 import streamlit as st
 import streamlit.components.v1 as components
 from data import load_all_data, MYDICT
 
 # ── Config ──────────────────────────────────────────────────────────────────
 TODAY = date.today()
-CHART_START_DATE = "2025-01-01"
+CHART_START_DATE = (TODAY - relativedelta(months=+1)).replace(day=1)
 
 # ── Data (cached) ────────────────────────────────────────────────────────────
 @st.cache_data(ttl=3600)
@@ -37,30 +38,34 @@ def build_ticker_rows(df: pd.DataFrame) -> str:
 
     tickers = [
         # (sym, name, col, fmt, section, prev_offset, direction)
-        ("GDP",       "Real GDP QoQ",           "A191RL1Q225SBEA",  "pct",        "Macro",       1, 1 ),
-        ("CPI",       "US CPI YoY",             "CPI_YOY",          "pct",        "Macro",       1, -1),
-        ("PCE",       "US PCE YoY",             "PCE_YOY",          "pct",        "Macro",       1, -1),
-        ("UNRATE",    "Unemployment",           "UNRATE",           "pct",        "Macro",       1, -1),
-        ("NFP",       "Non-farm Payrolls",      "NFP_MOM",          "kppl",       "Macro",       1, 1 ),
-        ("FFR",       "Fed Funds Rate",         "DFEDTARU",         "pct",        "Rates",       1, 1 ),
-        ("SOFR",      "SOFR",                   "SOFR",             "pct",        "Rates",       5, 1 ),
-        ("YLDCURVE",  "Yield Curve",            "__YIELDCURVE__",   "yc",         "Rates",       0, 1 ),
-        ("DGS2",      "US 2Y Treasury",         "DGS2",             "pct",        "Rates",       5, 1 ),
-        ("DGS10",     "US 10Y Treasury",        "DGS10",            "pct",        "Rates",       5, 1 ),
-        ("2Y10Y",     "2Y10Y Spread",           "2Y10Y",            "pct",        "Rates",       5, 1 ),
-        ("SPX",       "S&P 500",                "^GSPC",            "idx",        "Equities",    5, 1 ),
-        ("^IXIC",     "NASDAQ Composite",       "^IXIC",            "idx",        "Equities",    5, 1 ),
-        ("^N225",     "Nikkei 225",             "^N225",            "idx",        "Equities",    5, 1 ),
-        ("FTSE",      "FTSE 100",               "^FTSE",            "idx",        "Equities",    5, 1 ),
-        ("VIX",       "CBOE Volatility Index",  "^VIX",             "idx_twodp",  "Equities",    5, 1 ),
-        ("EURUSD=X",  "EUR/USD",                "EURUSD=X",         "idx_twodp",  "FX",          5, 1 ),
-        ("GBPUSD=X",  "GBP/USD",                "GBPUSD=X",         "idx_twodp",  "FX",          5, 1 ),
-        ("USDJPY=X",  "USD/JPY",                "USDJPY=X",         "idx_twodp",  "FX",          5, 1 ),
-        ("GC=F",      "CME Gold Futures",       "GC=F",             "idx",        "Commodities", 5, 1 ),
-        ("SI=F",      "CME Silver Futures",     "SI=F",             "idx_twodp",  "Commodities", 5, 1 ),
-        ("BZ=F",      "Brent Crude Oil",        "BZ=F",             "idx_twodp",  "Commodities", 5, 1 ),
-        ("CL=F",      "WTI Crude Oil",          "CL=F",             "idx_twodp",  "Commodities", 5, 1 )
-
+        ("GDP",                 "US Real GDP QoQ",        "A191RL1Q225SBEA",  "pct",        "Macro",       1, 1 ),
+        ("CPI",                 "US CPI YoY",             "CPI_YOY",          "pct",        "Macro",       1, -1),
+        ("PCE",                 "US PCE YoY",             "PCE_YOY",          "pct",        "Macro",       1, -1),
+        ("T5YIFR",              "US 5Y5Y Forward Inflation Expectation Rate", "T5YIFR", "pct", "Macro",       5, -1),
+        ("UNRATE",              "US Unemployment Rate",           "UNRATE",           "pct",        "Macro",       1, -1),
+        ("NFP",                 "US Non-farm Payrolls",      "NFP_MOM",          "kppl",       "Macro",       1, 1 ),
+        ("FFR",                 "US Fed Funds Rate",      "DFEDTARU",         "range",        "US Rates",    1, -1 ),
+        ("SOFR",                "SOFR",                   "SOFR",             "pct",        "US Rates",    5, -1 ),
+        ("DGS2",                "US 2Y Treasury",         "DGS2",             "pct",        "US Rates",    5, 1 ),
+        ("DGS10",               "US 10Y Treasury",        "DGS10",            "pct",        "US Rates",    5, 1 ),
+        ("2Y10Y",               "US 2Y10Y Spread",        "2Y10Y",            "pct",        "US Rates",    5, 1 ),
+        ("YLDCURVE",            "US Yield Curve",         "__YIELDCURVE__",   "yc",         "US Rates",    0, 1 ),      
+        ("ECBDFR",              "ECB Deposit Facility Rate", "ECBDFR",          "pct",        "Euro Rates",   5, -1 ),
+        ("BAMLC0A0CMEY",        "Bofa US Corporate Index Effective Yield", "BAMLC0A0CMEY", "pct", "Credit", 5, 1),        
+        ("BAMLH0A0HYM2EY",      "BofA US High Yield Index Effective Yield", "BAMLH0A0HYM2EY", "pct", "Credit", 5, 1),
+        ("SPX",                 "S&P 500",                "^GSPC",            "idx",        "Equities",    5, 1 ),
+        ("^IXIC",               "NASDAQ Composite",       "^IXIC",            "idx",        "Equities",    5, 1 ),
+        ("FTSE",                "FTSE 100",               "^FTSE",            "idx",        "Equities",    5, 1 ),        
+        ("^GDAXI",              "DAX 40",                 "^GDAXI",           "idx",        "Equities",    5, 1 ),
+        ("^N225",               "Nikkei 225",             "^N225",            "idx",        "Equities",    5, 1 ),
+        ("VIX",                 "VIX",                    "^VIX",             "idx_twodp",  "Equities",    5, 1 ),
+        ("EURUSD=X",            "EUR/USD",                "EURUSD=X",         "idx_twodp",  "FX",          5, 1 ),
+        ("GBPUSD=X",            "GBP/USD",                "GBPUSD=X",         "idx_twodp",  "FX",          5, 1 ),
+        ("USDJPY=X",            "USD/JPY",                "USDJPY=X",         "idx_twodp",  "FX",          5, 1 ),
+        ("GC=F",                "CME Gold Futures",       "GC=F",             "idx",        "Commodities", 5, 1 ),
+        ("SI=F",                "CME Silver Futures",     "SI=F",             "idx_twodp",  "Commodities", 5, 1 ),
+        ("BZ=F",                "Brent Crude Oil",        "BZ=F",             "idx_twodp",  "Commodities", 5, 1 ),
+        ("CL=F",                "WTI Crude Oil",          "CL=F",             "idx_twodp",  "Commodities", 5, 1 )
     ]
 
     YC_LABELS = ["1M", "3M", "6M", "1Y", "2Y", "5Y", "7Y", "10Y", "20Y", "30Y"]
@@ -86,7 +91,7 @@ def build_ticker_rows(df: pd.DataFrame) -> str:
             rows.append({
                 "type": "yieldcurve",
                 "sym": "YLDCURVE",
-                "name": "Yield Curve",
+                "name": "US Yield Curve",
                 "section": section,
                 "maturities": YC_LABELS,
                 "vals": yc_vals,
@@ -153,6 +158,16 @@ def build_ticker_rows(df: pd.DataFrame) -> str:
   tr.ticker-row.active {{ background: #161921; }}
   td {{ padding: 9px 14px; vertical-align: middle; white-space: nowrap; }}
   td.r {{ text-align: right; }}
+  th:first-child,
+  td:first-child {{
+    text-align: left;
+    }}
+  td.commentary-cell {{
+    white-space: normal;
+    min-width: 200px;
+    width: 260px;
+    padding: 6px 10px;
+  }}
   .sym  {{ font-weight: 600; font-size: 13px; color: #f0f0f0; }}
   .val  {{ font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: #f0f0f0; }}
   .dt   {{ font-size: 11px; color: #6b7280; }}
@@ -190,6 +205,56 @@ def build_ticker_rows(df: pd.DataFrame) -> str:
   }}
   .btn:hover {{ background: #23272f; border-color: #4b5563; color: #e0e0e0; }}
   .btn:active {{ background: #2a2d35; }}
+
+  /* ── Commentary textarea ── */
+  .commentary-box {{
+    width: 100%;
+    min-height: 34px;
+    max-height: 120px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    color: #9ca3af;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 11.5px;
+    line-height: 1.45;
+    resize: none;
+    outline: none;
+    padding: 4px 7px;
+    overflow-y: hidden;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+    cursor: text;
+  }}
+  .commentary-box::placeholder {{
+    color: #374151;
+    font-style: italic;
+  }}
+  .commentary-box:hover {{
+    border-color: #2a2d35;
+    background: #12151c;
+  }}
+  .commentary-box:focus {{
+    border-color: #374151;
+    background: #12151c;
+    color: #d1d5db;
+  }}
+  .commentary-box.has-content {{
+    color: #c9d0da;
+  }}
+  .save-flash {{
+    font-size: 10px;
+    color: #22c55e;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    position: absolute;
+    bottom: 2px;
+    right: 6px;
+  }}
+  .save-flash.show {{ opacity: 1; }}
+  .commentary-wrap {{
+    position: relative;
+  }}
 </style>
 </head>
 <body>
@@ -214,6 +279,7 @@ def build_ticker_rows(df: pd.DataFrame) -> str:
       <th class="r" style="width:90px">Date</th>
       <th class="r" style="width:130px">Prev / Change</th>
       <th class="r" style="width:134px">Trend</th>
+      <th style="width:260px; padding-left:14px">Commentary</th>
     </tr>
   </thead>
   <tbody id="tb"></tbody>
@@ -224,20 +290,91 @@ def build_ticker_rows(df: pd.DataFrame) -> str:
 const ROWS = {data_json};
 const GLOBAL_DEFAULT = '{CHART_START_DATE}';
 
+/* Market Commentary
+
+const STORAGE_PREFIX = 'macro_commentary_';
+
+/* ── Commentary persistence (localStorage) ── */
+function loadCommentary(sym) {{
+  try {{ return localStorage.getItem(STORAGE_PREFIX + sym) || ''; }}
+  catch(e) {{ return ''; }}
+}}
+function saveCommentary(sym, text) {{
+  try {{ localStorage.setItem(STORAGE_PREFIX + sym, text); }} catch(e) {{}}
+}}
+
+/* Auto-grow textarea to fit its content */
+function autoGrow(el) {{
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}}
+
+/* Build the commentary <td> for a given sym */
+function makeCommentaryCell(sym) {{
+  const saved = loadCommentary(sym);
+  const td = document.createElement('td');
+  td.className = 'commentary-cell';
+  const wrap = document.createElement('div');
+  wrap.className = 'commentary-wrap';
+  const ta = document.createElement('textarea');
+  ta.id = 'cmnt-' + sym;
+  ta.className = 'commentary-box' + (saved ? ' has-content' : '');
+  ta.placeholder = 'Add commentary\u2026';
+  ta.rows = 1;
+  ta.spellcheck = false;
+  ta.value = saved;
+  const flash = document.createElement('span');
+  flash.className = 'save-flash';
+  flash.id = 'flash-' + sym;
+  flash.textContent = 'saved';
+  wrap.appendChild(ta);
+  wrap.appendChild(flash);
+  td.appendChild(wrap);
+  return td;
+}}
+
+/* Wire save + auto-grow after the element is in the DOM */
+const saveTimers = {{}};
+function wireCommentary(sym) {{
+  const ta = document.getElementById('cmnt-' + sym);
+  if (!ta) return;
+  autoGrow(ta);
+
+  ta.addEventListener('input', () => {{
+    autoGrow(ta);
+    ta.classList.toggle('has-content', ta.value.trim().length > 0);
+    clearTimeout(saveTimers[sym]);
+    saveTimers[sym] = setTimeout(() => {{
+      saveCommentary(sym, ta.value);
+      const flash = document.getElementById('flash-' + sym);
+      if (flash) {{
+        flash.classList.add('show');
+        setTimeout(() => flash.classList.remove('show'), 1200);
+      }}
+    }}, 600);
+  }});
+
+  /* Prevent textarea clicks/keys from toggling the expand row */
+  ta.addEventListener('click',    e => e.stopPropagation());
+  ta.addEventListener('mousedown', e => e.stopPropagation());
+  ta.addEventListener('keydown',  e => e.stopPropagation());
+}}
+
 function fmtVal(v, fmt) {{
-  if (fmt === 'pct')  return v.toFixed(2) + '%';
-  if (fmt === 'idx')  return Math.round(v).toLocaleString('en-US');
-  if (fmt === 'idxtwodp') return v.toFixed(2);
-  if (fmt === 'kppl') return (v >= 0 ? '+' : '') + Math.round(v).toLocaleString('en-US') + 'K';
+  if (fmt === 'pct')      return v.toFixed(2) + '%';
+  if (fmt === 'idx')      return Math.round(v).toLocaleString('en-US');
+  if (fmt === 'idx_twodp') return v.toLocaleString('en-US', {{ minimumFractionDigits: 2, maximumFractionDigits: 2 }});
+  if (fmt === 'kppl')     return (v >= 0 ? '+' : '') + Math.round(v).toLocaleString('en-US') + 'K';
+  if (fmt === 'range')    return (v - 0.25).toFixed(2) + '% - ' + v.toFixed(2) + '%';
   return v.toFixed(2);
 }}
 
 function fmtChg(abs, pct, fmt) {{
   const sign = abs >= 0 ? '+' : '';
-  if (fmt === 'pct')  return sign + abs.toFixed(2) + '%';
-  if (fmt === 'idx')  return sign + Math.round(abs).toLocaleString('en-US') + ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)';
-  if (fmt === 'idxtwodp') return sign + Math.round(abs).toLocaleString('en-US') + ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)';
-  if (fmt === 'kppl') return sign + Math.round(abs).toLocaleString('en-US') + 'K';
+  if (fmt === 'pct')       return sign + abs.toFixed(2) + '%';
+  if (fmt === 'idx')       return sign + Math.round(abs).toLocaleString('en-US') + ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)';
+  if (fmt === 'idx_twodp') return sign + abs.toLocaleString('en-US', {{ minimumFractionDigits: 2, maximumFractionDigits: 2 }}) + ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)';
+  if (fmt === 'kppl')      return sign + Math.round(abs).toLocaleString('en-US') + 'K';
   return sign + abs.toFixed(2) + ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)';
 }}
 
@@ -268,7 +405,7 @@ ROWS.forEach(r => {{
     lastSection = r.section;
     const sr = document.createElement('tr');
     sr.className = 'section-row';
-    sr.innerHTML = `<td colspan="5">${{r.section}}</td>`;
+    sr.innerHTML = `<td colspan="6">${{r.section}}</td>`;
     tb.appendChild(sr);
   }}
 
@@ -278,7 +415,6 @@ ROWS.forEach(r => {{
 
   /* ── Yield Curve row ── */
   if (r.type === 'yieldcurve') {{
-    /* slope drives line colour: green = normal, red = inverted */
     const t10 = r.vals[7], t2 = r.vals[4];
     const slope = (t10 != null && t2 != null) ? t10 - t2 : null;
     const lineClr = (slope == null || slope >= 0) ? '#22c55e' : '#ef4444';
@@ -295,12 +431,13 @@ ROWS.forEach(r => {{
           <canvas id="${{sparkId}}" role="img" aria-label="Yield curve sparkline"></canvas>
         </div>
       </td>`;
+    row.appendChild(makeCommentaryCell(r.sym));
 
     const expRow = document.createElement('tr');
     expRow.className = 'expand-row';
     expRow.id = expId;
     expRow.innerHTML = `
-      <td colspan="5" class="expand-inner">
+      <td colspan="6" class="expand-inner">
         <div class="full-wrap">
           <canvas id="${{fullId}}" role="img" aria-label="Yield curve chart"></canvas>
         </div>
@@ -319,7 +456,7 @@ ROWS.forEach(r => {{
       sendHeightSlow();
     }});
 
-    setTimeout(() => buildYCSpark(r, sparkId, lineClr), 60);
+    setTimeout(() => {{ buildYCSpark(r, sparkId, lineClr); wireCommentary(r.sym); }}, 60);
     return;
   }}
 
@@ -336,20 +473,21 @@ ROWS.forEach(r => {{
     <td class="r"><span class="val">${{fmtVal(r.latest, r.fmt)}}</span></td>
     <td class="r"><span class="dt">${{r.latestDate}}</span></td>
     <td class="r">
-      <span class="prev">${{fmtVal(r.prevVal, r.fmt)}} <span style="font-size:10px;color:#4b5563">${{r.prevDate}}</span></span>
-      <span class="${{cls}}">${{arrow}}${{fmtChg(r.chgAbs, r.chgPct, r.fmt)}}</span>
+      <span class="prev" id="prev-${{r.sym}}">${{fmtVal(r.prevVal, r.fmt)}} <span style="font-size:10px;color:#4b5563">${{r.prevDate}}</span></span>
+      <span id="chg-${{r.sym}}" class="${{cls}}">${{arrow}}${{fmtChg(r.chgAbs, r.chgPct, r.fmt)}}</span>
     </td>
     <td class="r">
       <div class="spark-wrap">
         <canvas id="${{sparkId}}" role="img" aria-label="Sparkline for ${{r.sym}}"></canvas>
       </div>
     </td>`;
+  row.appendChild(makeCommentaryCell(r.sym));
 
   const expRow = document.createElement('tr');
   expRow.className = 'expand-row';
   expRow.id = expId;
   expRow.innerHTML = `
-    <td colspan="5" class="expand-inner">
+    <td colspan="6" class="expand-inner">
       <div class="expand-header">
         <div style="display:flex;align-items:center;gap:8px" onclick="event.stopPropagation()">
           <span class="expand-hint">From</span>
@@ -375,21 +513,49 @@ ROWS.forEach(r => {{
     sendHeightSlow();
   }});
 
-  setTimeout(() => buildSpark(r, sparkId, lineClr), 60);
+  setTimeout(() => {{ buildSpark(r, sparkId, lineClr); wireCommentary(r.sym); }}, 60);
 }});
+
+/* ── updateRowStats ── */
+function updateRowStats(r, startDate) {{
+  const {{ labels, vals }} = filterByDate(r, startDate);
+  if (!vals.length) return null;
+  const startVal  = vals[0];
+  const chgAbs    = r.latest - startVal;
+  const chgPct    = startVal ? (chgAbs / startVal * 100) : 0;
+  const signed    = chgAbs * (r.dir || 1);
+  const cls       = signed > 0 ? 'pos' : signed < 0 ? 'neg' : 'neu';
+  const arrow     = chgAbs > 0 ? '▲ ' : chgAbs < 0 ? '▼ ' : '— ';
+  const lineClr   = signed >= 0 ? '#22c55e' : '#ef4444';
+  const fillColor = lineClr === '#22c55e' ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)';
+
+  const chgEl = document.getElementById('chg-' + r.sym);
+  if (chgEl) {{ chgEl.className = cls; chgEl.textContent = arrow + fmtChg(chgAbs, chgPct, r.fmt); }}
+
+  const prevEl = document.getElementById('prev-' + r.sym);
+  if (prevEl) {{ prevEl.innerHTML = fmtVal(startVal, r.fmt) + ' <span style="font-size:10px;color:#4b5563">' + labels[0] + '</span>'; }}
+
+  return {{ lineClr, fillColor }};
+}}
 
 /* ── Global controls ── */
 function applyGlobalDate() {{
   const date = document.getElementById('global-date').value;
   if (!date) return;
-  ROWS.forEach(r => {{
-    if (r.type === 'yieldcurve') return;
+  const eligible = ROWS.filter(r => r.type !== 'yieldcurve');
+  let i = 0;
+  function doNext() {{
+    if (i >= eligible.length) return;
+    const r = eligible[i++];
     chartDates[r.sym] = date;
     const inp = document.getElementById('date-' + r.sym);
     if (inp) inp.value = date;
     if (fullCharts[r.sym]) refreshChart(r.sym, date);
-    if (sparkCharts[r.sym]) refreshSpark(r.sym, date);
-  }});
+    else if (sparkCharts[r.sym]) refreshSpark(r.sym, date);
+    else updateRowStats(r, date);
+    requestAnimationFrame(doNext);
+  }}
+  requestAnimationFrame(doNext);
 }}
 
 function expandAllRows() {{
@@ -439,11 +605,7 @@ function buildYCSpark(r, id, color) {{
       labels: r.maturities,
       datasets: [{{
         data: r.vals.map(v => v ?? 0),
-        borderColor: color,
-        borderWidth: 1.5,
-        pointRadius: 0,
-        fill: false,
-        tension: 0,
+        borderColor: color, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0,
       }}]
     }},
     options: {{
@@ -464,13 +626,8 @@ function buildYCFull(r, id, color) {{
       labels: r.maturities,
       datasets: [{{
         data: r.vals.map(v => v ?? 0),
-        borderColor: color,
-        borderWidth: 1.5,
-        pointRadius: 3,
-        pointBackgroundColor: color,
-        fill: true,
-        backgroundColor: fillColor,
-        tension: 0,
+        borderColor: color, borderWidth: 1.5, pointRadius: 3,
+        pointBackgroundColor: color, fill: true, backgroundColor: fillColor, tension: 0,
       }}]
     }},
     options: {{
@@ -488,15 +645,8 @@ function buildYCFull(r, id, color) {{
         }}
       }},
       scales: {{
-        x: {{
-          grid: {{ color: 'rgba(255,255,255,0.05)' }},
-          ticks: {{ color: '#4b5563', font: {{ size: 11 }} }}
-        }},
-        y: {{
-          position: 'right',
-          grid: {{ color: 'rgba(255,255,255,0.05)' }},
-          ticks: {{ color: '#4b5563', callback: v => v.toFixed(2) + '%' }}
-        }}
+        x: {{ grid: {{ color: 'rgba(255,255,255,0.05)' }}, ticks: {{ color: '#4b5563', font: {{ size: 11 }} }} }},
+        y: {{ position: 'right', grid: {{ color: 'rgba(255,255,255,0.05)' }}, ticks: {{ color: '#4b5563', callback: v => v.toFixed(2) + '%' }} }}
       }}
     }}
   }});
@@ -513,12 +663,11 @@ function buildSpark(r, id, color) {{
                     || GLOBAL_DEFAULT;
   if (perRowInput && !perRowInput.value) perRowInput.value = startDate;
   const {{ labels, vals }} = filterByDate(r, startDate);
+  const stats = updateRowStats(r, startDate);
+  const lineClr = stats ? stats.lineClr : color;
   sparkCharts[r.sym] = new Chart(ctx, {{
     type: 'line',
-    data: {{
-      labels,
-      datasets: [{{ data: vals, borderColor: color, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0 }}]
-    }},
+    data: {{ labels, datasets: [{{ data: vals, borderColor: lineClr, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0 }}] }},
     options: {{
       responsive: true, maintainAspectRatio: false, animation: false, events: [],
       plugins: {{ legend: {{ display: false }}, tooltip: {{ enabled: false }} }},
@@ -537,21 +686,21 @@ function buildFull(r, id, color) {{
                     || GLOBAL_DEFAULT;
   if (perRowInput && !perRowInput.value) perRowInput.value = startDate;
   const {{ labels, vals }} = filterByDate(r, startDate);
-  const fillColor = color === '#22c55e' ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)';
+  const stats = updateRowStats(r, startDate);
+  const lineClr   = stats ? stats.lineClr   : color;
+  const fillColor = stats ? stats.fillColor : (color === '#22c55e' ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)');
 
   function tickFmt(v) {{
-    if (r.fmt === 'pct')  return v.toFixed(2) + '%';
-    if (r.fmt === 'idx')  return Math.round(v).toLocaleString('en-US');
-    if (r.fmt === 'kppl') return Math.round(v / 1000) + 'k';
+    if (r.fmt === 'pct')       return v.toFixed(2) + '%';
+    if (r.fmt === 'idx')       return Math.round(v).toLocaleString('en-US');
+    if (r.fmt === 'idx_twodp') return v.toLocaleString('en-US', {{ minimumFractionDigits: 2, maximumFractionDigits: 2 }});
+    if (r.fmt === 'kppl')      return Math.round(v / 1000) + 'k';
     return v.toFixed(2);
   }}
 
   fullCharts[r.sym] = new Chart(ctx, {{
     type: 'line',
-    data: {{
-      labels,
-      datasets: [{{ data: vals, borderColor: color, borderWidth: 1.5, pointRadius: 0, fill: true, backgroundColor: fillColor, tension: 0 }}]
-    }},
+    data: {{ labels, datasets: [{{ data: vals, borderColor: lineClr, borderWidth: 1.5, pointRadius: 0, fill: true, backgroundColor: fillColor, tension: 0 }}] }},
     options: {{
       responsive: true, maintainAspectRatio: false,
       plugins: {{
@@ -578,9 +727,11 @@ function refreshSpark(sym, startDate) {{
   if (!chart || !r || r.type === 'yieldcurve') return;
   const {{ labels, vals }} = filterByDate(r, startDate);
   if (!vals.length) return;
+  const stats = updateRowStats(r, startDate);
+  if (stats) chart.data.datasets[0].borderColor = stats.lineClr;
   chart.data.labels = labels;
   chart.data.datasets[0].data = vals;
-  chart.update();
+  chart.update('none');
 }}
 
 function refreshChart(sym, startDate) {{
@@ -590,10 +741,24 @@ function refreshChart(sym, startDate) {{
   const r = ROWS.find(x => x.sym === sym);
   if (!chart || !r || r.type === 'yieldcurve') return;
   const {{ labels, vals }} = filterByDate(r, startDate);
+  const stats = updateRowStats(r, startDate);
+  if (stats) {{
+    chart.data.datasets[0].borderColor = stats.lineClr;
+    chart.data.datasets[0].backgroundColor = stats.fillColor;
+  }}
   chart.data.labels = labels;
   chart.data.datasets[0].data = vals;
-  chart.update();
+  chart.update('none');
   refreshSpark(sym, startDate);
+}}
+
+function sendHeight() {{
+  const h = document.body.scrollHeight;
+  window.parent.postMessage({{ type: 'streamlit:setFrameHeight', height: h }}, '*');
+}}
+
+function sendHeightSlow() {{
+  [100, 300, 600].forEach(t => setTimeout(sendHeight, t));
 }}
 
 </script>
@@ -613,13 +778,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("Macro Dashboard")
+st.markdown("<h1 style='font-family: Segoe UI; color: white;'>Macro Dashboard</h1>", unsafe_allow_html=True)
 st.markdown("""
 <style>
 h1 {
     font-size: 42px !important;
     font-weight: 700 !important;
-    font-family: "Inter", sans-serif;
+    font-family: "Segoe UI", sans-serif;
     color: #f0f0f0;
 }
 </style>
