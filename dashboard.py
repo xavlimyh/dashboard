@@ -42,8 +42,8 @@ def build_ticker_rows(df: pd.DataFrame) -> str:
         ("CPI",                 "US CPI YoY",             "CPI_YOY",          "pct",        "Macro",       1, -1),
         ("PCE",                 "US PCE YoY",             "PCE_YOY",          "pct",        "Macro",       1, -1),
         ("T5YIFR",              "US 5Y5Y Forward Inflation Expectation Rate", "T5YIFR", "pct", "Macro",       5, -1),
-        ("UNRATE",              "US Unemployment Rate",           "UNRATE",           "pct",        "Macro",       1, -1),
-        ("NFP",                 "US Non-farm Payrolls",      "NFP_MOM",          "kppl",       "Macro",       1, 1 ),
+        ("UNRATE",              "US Unemployment Rate",   "UNRATE",           "pct",        "Macro",       1, -1),
+        ("NFP",                 "US Non-farm Payrolls",   "NFP_MOM",          "kppl",       "Macro",       1, 1 ),
         ("FFR",                 "US Fed Funds Rate",      "DFEDTARU",         "range",        "US Rates",    1, -1 ),
         ("SOFR",                "SOFR",                   "SOFR",             "pct",        "US Rates",    5, -1 ),
         ("DGS2",                "US 2Y Treasury",         "DGS2",             "pct",        "US Rates",    5, 1 ),
@@ -55,6 +55,7 @@ def build_ticker_rows(df: pd.DataFrame) -> str:
         ("BAMLH0A0HYM2EY",      "BofA US High Yield Index Effective Yield", "BAMLH0A0HYM2EY", "pct", "Credit", 5, 1),
         ("SPX",                 "S&P 500",                "^GSPC",            "idx",        "Equities",    5, 1 ),
         ("^IXIC",               "NASDAQ Composite",       "^IXIC",            "idx",        "Equities",    5, 1 ),
+        ("^DJI",                "Dow Jones Industrial Average", "^DJI",       "idx",        "Equities",    5, 1 ),
         ("FTSE",                "FTSE 100",               "^FTSE",            "idx",        "Equities",    5, 1 ),        
         ("^GDAXI",              "DAX 40",                 "^GDAXI",           "idx",        "Equities",    5, 1 ),
         ("^N225",               "Nikkei 225",             "^N225",            "idx",        "Equities",    5, 1 ),
@@ -289,8 +290,6 @@ def build_ticker_rows(df: pd.DataFrame) -> str:
 <script>
 const ROWS = {data_json};
 const GLOBAL_DEFAULT = '{CHART_START_DATE}';
-
-/* Market Commentary
 
 const STORAGE_PREFIX = 'macro_commentary_';
 
