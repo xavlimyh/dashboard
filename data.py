@@ -1,18 +1,13 @@
 import os
 from dotenv import load_dotenv
 import pandas as pd
-import numpy as np
 import time
-from datetime import date, datetime, timedelta
-from dateutil.relativedelta import relativedelta
-from IPython.display import display, HTML
-import matplotlib.pyplot as plt
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import plotly.colors as pc
-import streamlit as st
+from functools import reduce
 from fredapi import Fred
 import yfinance as yf
+from get_boe import get_boe_series
+from get_cnbc import get_cnbc_series
+from get_boj import get_boj_series
 
 # Load variables from .env into the system environment
 load_dotenv()
@@ -26,54 +21,71 @@ if api_key:
 else:
     raise ValueError("FRED_API_KEY not found in environment variables.")
 
+TICKERS = [
+#   (sym,                   name,                                                         fmt,              section,          prev_offset, direction, source)
+    ("A191RL1Q225SBEA",     "Real GDP QoQ",                                               "pct_1dp",        "US Macro",       1,  1,  "fred"),
+    ("CPIAUCSL",            "CPI YoY",                                                    "pct_1dp",        "US Macro",       1, -1,  "fred"),
+    ("CPILFESL",            "Core CPI YoY",                                               "pct_1dp",        "US Macro",       1, -1,  "fred"),
+    ("PCEPI",               "PCE YoY",                                                    "pct_1dp",        "US Macro",       1, -1,  "fred"),
+    ("PCEPILFE",            "Core PCE YoY",                                               "pct_1dp",        "US Macro",       1, -1,  "fred"),
+    ("T5YIFR",              "5Y5Y Forward Inflation Expectation Rate",                    "pct_1dp",        "US Macro",       5, -1,  "fred"),
+    ("UNRATE",              "Unemployment Rate",                                          "pct_1dp",        "US Macro",       1, -1,  "fred"),
+    ("PAYEMS",              "Non-farm Payrolls",                                          "kppl",           "US Macro",       1,  1,  "fred"),
+    ("DFEDTARU",            "Fed Funds Rate",                                             "range",          "US Rates",       1, -1,  "fred"),
+    ("SOFR",                "SOFR",                                                       "pct_2dp",        "US Rates",       5,  1,  "fred"),
+    ("DGS1MO",              "1mo Treasury",                                               "pct_2dp",        "US Rates",       5,  -1,  "fred"),
+    ("DGS3MO",              "3mo Treasury",                                               "pct_2dp",        "US Rates",       5,  -1,  "fred"),
+    ("DGS6MO",              "6mo Treasury",                                               "pct_2dp",        "US Rates",       5,  -1,  "fred"), 
+    ("DGS1",                "1Y Treasury",                                                "pct_2dp",        "US Rates",       5,  -1,  "fred"),   
+    ("DGS2",                "2Y Treasury",                                                "pct_2dp",        "US Rates",       5,  -1,  "fred"),
+    ("DGS3",                "3Y Treasury",                                                "pct_2dp",        "US Rates",       5,  -1,  "fred"),
+    ("DGS5",                "5Y Treasury",                                                "pct_2dp",        "US Rates",       5,  -1,  "fred"),
+    ("DGS7",                "7Y Treasury",                                                "pct_2dp",        "US Rates",       5,  -1,  "fred"),
+    ("DGS10",               "10Y Treasury",                                               "pct_2dp",        "US Rates",       5,  -1,  "fred"),
+    ("DGS20",               "20Y Treasury",                                               "pct_2dp",        "US Rates",       5,  -1,  "fred"),
+    ("DGS30",               "30Y Treasury",                                               "pct_2dp",        "US Rates",       5,  -1,  "fred"),
+    ("US2S10S",             "US 2s10s Spread",                                            "pct_2dp",        "US Rates",       5,  1,  "derived"),
+    ("USYIELDCURVE",        "Yield Curve",                                                "yc",             "US Rates",       0,  1,  "derived"),      
+    ("ECBDFR",              "ECB Deposit Facility Rate",                                  "pct_2dp",        "Euro Rates",   5, -1,  "fred"),
+    ("IUDBEDR",             "BoE Bank Rate",                                              "pct_2dp",        "UK Rates",       5, -1,  "boe"),
+    ("IUDSOIA",             "SONIA",                                                      "pct_2dp",        "UK Rates",       5, -1,  "boe"),
+    ("GB1Y",                "1Y Gilt",                                                    "pct_2dp",        "UK Rates",       5, -1,  "cnbc"),      
+    ("GB2Y",                "2Y Gilt",                                                    "pct_2dp",        "UK Rates",       5, -1,  "cnbc"),     
+    ("GB3Y",                "3Y Gilt",                                                    "pct_2dp",        "UK Rates",       5, -1,  "cnbc"),   
+    ("GB5Y",                "5Y Gilt",                                                    "pct_2dp",        "UK Rates",       5, -1,  "cnbc"), 
+    ("GB10Y",               "10Y Gilt",                                                   "pct_2dp",        "UK Rates",       5, -1,  "cnbc"),
+    ("GB20Y",               "20Y Gilt",                                                   "pct_2dp",        "UK Rates",       5, -1,  "cnbc"),
+    ("GB30Y",               "30Y Gilt",                                                   "pct_2dp",        "UK Rates",       5, -1,  "cnbc"),
+    ("UK2S10S",             "UK 2s10s Spread",                                            "pct_2dp",        "UK Rates",       5, -1,  "derived"),
+    ("FM01_STRDCLUCON",     "Japan Uncollateralised Overnight Call Rate",                 "pct_2dp",        "Japan Rates",   5, -1,  "boj"),
+    ("JP10Y",               "Japan 10Y Treasury",                                         "pct_2dp",        "Japan Rates",   5, -1,  "cnbc"),
+    ("BAMLC0A0CMEY",        "Bofa US Corporate Index Effective Yield",                    "pct_2dp",        "US Credit",      5,  -1,  "fred"),        
+    ("BAMLH0A0HYM2EY",      "BofA US High Yield Index Effective Yield",                   "pct_2dp",        "US Credit",      5,  -1,  "fred"),
+    ("^GSPC",               "S&P 500",                                                    "idx",            "Equities",       5,  1,  "yf"),
+    ("^VIX",                "VIX",                                                        "idx_twodp",      "Equities",       5,  1,  "yf"),
+    ("^IXIC",               "NASDAQ Composite",                                           "idx",            "Equities",       5,  1,  "yf"),
+    ("^DJI",                "Dow Jones Industrial Average",                               "idx",            "Equities",       5,  1,  "yf"),
+    ("^FTSE",               "FTSE 100",                                                   "idx",            "Equities",       5,  1,  "yf"),       
+    ("^STOXX",              "STOXX 600",                                                  "idx_twodp",      "Equities",       5,  1,  "yf"),  
+    ("^GDAXI",              "DAX 40",                                                     "idx",            "Equities",       5,  1,  "yf"),
+    ("^N225",               "Nikkei 225",                                                 "idx",            "Equities",       5,  1,  "yf"),
+    ("^AXJO",               "ASX 200",                                                    "idx",            "Equities",       5,  1,  "yf"),
+    ("^HSI",                "Hang Seng Index",                                            "idx",            "Equities",       5,  1,  "yf"),
+    ("000001.SS",           "Shanghai Composite Index",                                   "idx",            "Equities",       5,  1,  "yf"),
+    ("^KS11",               "KOSPI",                                                      "idx",            "Equities",       5,  1,  "yf"),
+    ("EURUSD=X",            "EURUSD",                                                     "idx_twodp",      "FX",             5,  1,  "yf"),
+    ("GBPUSD=X",            "GBPUSD",                                                     "idx_twodp",      "FX",             5,  1,  "yf"),
+    ("USDJPY=X",            "USDJPY",                                                     "idx_twodp",      "FX",             5,  1,  "yf"),
+    ("USDCNY=X",            "USDCNY",                                                     "idx_twodp",      "FX",             5,  1,  "yf"),
+    ("GC=F",                "CME Gold Futures",                                           "idx",            "Commodities",    5,  1,  "yf"),
+    ("SI=F",                "CME Silver Futures",                                         "idx_twodp",      "Commodities",    5,  1,  "yf"),
+    ("BZ=F",                "Brent Crude Oil Futures",                                    "idx_twodp",      "Commodities",    5,  1,  "yf"),
+    ("CL=F",                "WTI Crude Oil Futures",                                      "idx_twodp",      "Commodities",    5,  1,  "yf")
+]
 
-MYDICT = {
-    "DGS1MO": ["fred", "1-Month US Treasury Yield", "Rates", "Daily"],
-    "DGS3MO": ["fred", "3-Month US Treasury Yield", "Rates", "Daily"],
-    "DGS6MO": ["fred", "6-Month US Treasury Yield", "Rates", "Daily"],
-    "DGS1": ["fred", "1 Year US Treasury Yield", "Rates", "Daily"],
-    "DGS2": ["fred", "2 Year US Treasury Yield", "Rates", "Daily"],
-    "DGS3": ["fred", "3 Year US Treasury Yield", "Rates", "Daily"],
-    "DGS5": ["fred", "5 Year US Treasury Yield", "Rates", "Daily"],
-    "DGS7": ["fred", "7 Year US Treasury Yield", "Rates", "Daily"],
-    "DGS10": ["fred", "10 Year US Treasury Yield", "Rates", "Daily"],
-    "DGS20": ["fred", "20 Year US Treasury Yield", "Rates", "Daily"],
-    "DGS30": ["fred", "30 Year US Treasury Yield", "Rates", "Daily"],
-    "DFEDTARU": ["fred", "Federal Funds Target Range - Upper Limit", "Rates", "Daily"],
-    "SOFR": ["fred", "Secured Overnight Financing Rate", "Rates", "Daily"],
-    "ECBDFR": ["fred", "ECB Deposit Facility Rate", "Rates", "Daily"],
-    "A191RL1Q225SBEA": ["fred", "Real Gross Domestic Product", "Macro", "Quarterly"],
-    "CPIAUCSL": ["fred", "CPI for All Urban Consumers", "Macro", "Monthly"],
-    "PCEPI": ["fred", "Personal Consumption Expenditures Price Index", "Macro", "Monthly"],
-    "PAYEMS": ["fred", "Total Nonfarm Employees", "Macro", "Monthly"],
-    "ICSA": ["fred", "Initial Jobless Claims", "Macro", "Weekly"],
-    "UNRATE": ["fred", "Unemployment Rate", "Macro", "Monthly"],
-    "T5YIFR": ["fred", "5Y5Y Forward Inflation Expectation Rate", "Macro", "Daily"],
-    "BAMLH0A0HYM2EY": ["fred", "BofA US High Yield Index Effective Yield", "Credit", "Daily"],
-    "BAMLC0A0CMEY": ["fred", "Bofa US Corprate Index Effective Yield", "Credit", "Daily"],
-    "^GSPC": ["yf", "S&P 500", "Equities", "Daily"],
-    "^VIX": ["yf", "CBOE Volatility Index", "Equities", "Daily"],
-    "^DJI": ["yf", "Dow Jones Industrial Average", "Equities", "Daily"],
-    "^IXIC": ["yf", "NASDAQ Composite", "Equities", "Daily"],
-    "^FTSE": ["yf", "FTSE 100", "Equities", "Daily"],
-    "^GDAXI": ["yf", "DAX 40", "Equities", "Daily"],
-    "^N225": ["yf", "Nikkei 225", "Equities", "Daily"],
-    "SI=F": ["yf", "CME Silver Futures", "Commodities", "Daily"],
-    "GC=F": ["yf", "CME Gold Futures", "Commodities", "Daily"],
-    "BZ=F": ["yf", "Brent Crude Oil", "Commodities", "Daily"],
-    "CL=F": ["yf", "WTI Crude Oil", "Commodities", "Daily"],
-    "EURUSD=X": ["yf", "EUR/USD", "FX", "Daily"],
-    "USDJPY=X": ["yf", "USD/JPY", "FX", "Daily"],
-    "GBPUSD=X": ["yf", "GBP/USD", "FX", "Daily"],
-}
-
-TODAY = date.today()
-CHART_START_DATE = "2025-01-01"
-
-
-def get_fred(_fred_client, series_ids):
+def get_fred(_fred_client, fred_ids):
     df = []
-    for code in series_ids:
+    for code in fred_ids:
         for attempt in range(3):
             try:
                 series = fred.get_series(code)
@@ -88,23 +100,53 @@ def get_fred(_fred_client, series_ids):
                     print("Failed to fetch", code)
 
     fred_df = pd.concat(df, axis=1).dropna(how="all")                 # Joins all individual series DataFrames side by side, so that each series becomes a column
-    print("Retrieval of FRED data complete.")
 
+    print("Retrieval of FRED data complete.")
+    print(f"{len(fred_ids)} FRED queries complete.")
     return fred_df
 
-def get_yf(tickers):
-    
-    yf_df_all = yf.download(tickers, period="5y")
-    print("Retrieval of Yahoo Finance data complete.")
-
-    return yf_df_all
-
-@st.cache_data(ttl=3600)
-def load_all_data():
-    series_ids = [key for key, val in MYDICT.items() if val[0] == "fred"]
-    tickers = [key for key, val in MYDICT.items() if val[0] == "yf"]
-    
-    fred_df = get_fred(fred, series_ids)
-    yf_df_all = yf.download(tickers, period="5y")
+def get_yf(yf_ids):
+    yf_df_all = yf.download(yf_ids, period="5y")
+    print(f"{len(yf_ids)} Yahoo Finance queries complete.")
     yf_df_close = yf_df_all["Close"]
-    return fred_df.join(yf_df_close)
+    return yf_df_close
+
+def get_cnbc(cnbc_ids):
+    print(f"{len(cnbc_ids)} CNBC queries complete.")
+    return get_cnbc_series(cnbc_ids)
+
+def get_boe(boe_ids):
+    print(f"{len(boe_ids)} BoE queries complete.")
+    return get_boe_series(boe_ids)
+
+def get_boj(boj_ids):
+    print(f"{len(boj_ids)} BoJ queries complete.")
+    return get_boj_series(boj_ids)
+
+# @st.cache_data(ttl=3600)
+def load_all_data():
+    fred_ids = [sym for sym, name, fmt, section, prev_offset, direction, source in TICKERS if source == "fred"]
+    yf_ids = [sym for sym, name, fmt, section, prev_offset, direction, source in TICKERS if source == "yf"]
+    boe_ids = [sym for sym, name, fmt, section, prev_offset, direction, source in TICKERS if source == "boe"]
+    cnbc_ids = [sym for sym, name, fmt, section, prev_offset, direction, source in TICKERS if source == "cnbc"]
+    boj_ids = [sym for sym, name, fmt, section, prev_offset, direction, source in TICKERS if source == "boj"]
+    id_count = len(fred_ids) + len(yf_ids) + len(boe_ids) + len(cnbc_ids) + len(boj_ids)
+
+    print(id_count, "tickers queried.")
+    fred_df = get_fred(fred, fred_ids)
+    yf_df = get_yf(yf_ids)
+    boe_df = get_boe(boe_ids)
+    cnbc_df = get_cnbc(cnbc_ids)
+    boj_df = get_boj(boj_ids)
+    print("All data sources queried.\nLoading dashboard...")
+
+    data_frames = [fred_df, yf_df, boe_df, cnbc_df, boj_df]
+    for name, df in [("fred", fred_df), ("yf", yf_df), ("boe", boe_df), ("cnbc", cnbc_df), ("boj", boj_df)]:
+        print(f"{name}: dtype={df.index.dtype}, tz={getattr(df.index, 'tz', None)}, sample={df.index[:2].tolist()}")
+    df_merged = reduce(lambda left,right: left.join(right), data_frames)
+    print(df_merged)
+
+    return df_merged
+
+df = load_all_data()
+print(df.notna().sum().to_string())

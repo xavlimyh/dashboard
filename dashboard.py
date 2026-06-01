@@ -1,16 +1,15 @@
-import os
 import json
 import pandas as pd
-import numpy as np
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 import streamlit as st
-import streamlit.components.v1 as components
-from data import load_all_data, MYDICT
+from data import load_all_data, TICKERS
+
+# python -m streamlit run C:\Users\xavie\NUS\Coding\Dashboard\dashboard.py --server.runOnSave true
 
 # ── Config ──────────────────────────────────────────────────────────────────
 TODAY = date.today()
-CHART_START_DATE = (TODAY - relativedelta(months=+1)).replace(day=1)
+CHART_START_DATE = (TODAY - relativedelta(month=1, day=1))   # Starts chart on 1st Jan of the current year 
 
 # ── Data (cached) ────────────────────────────────────────────────────────────
 @st.cache_data(ttl=3600)
@@ -18,65 +17,44 @@ def get_data():
     return load_all_data()
 
 combined_df = get_data()
+print(combined_df.notna().sum().to_string())
 
 pd.set_option("display.max_columns", None)
 pd.set_option("display.width", None)
 pd.set_option("display.float_format", "{:,.2f}".format)
 
+# ── Date-aware YoY % change, handles missing months ─────────────
+def yoy_pct(series: pd.Series) -> pd.Series:
+    s = series.dropna()
+    lagged = s.copy()
+    lagged.index = lagged.index + pd.DateOffset(months=12)
+    return (s / lagged.reindex(s.index) - 1) * 100
 
 # ── Ticker rows builder ───────────────────────────────────────────────────────
 def build_ticker_rows(df: pd.DataFrame) -> str:
 
     # ── Derived series ─────────────────────────────────────────────────────
     df = df.copy()
-    df["2Y10Y"] = df["DGS10"] - df["DGS2"]
-    df["CPI_YOY"] = df["CPIAUCSL"].dropna().pct_change(12) * 100
-    df["PCE_YOY"] = df["PCEPI"].dropna().pct_change(12) * 100
-    df["NFP_MOM"] = df["PAYEMS"].dropna().diff(1)
-
+    df["US2S10S"]    = df["DGS10"] - df["DGS2"]
+    df["UK2S10S"]    = df["GB10Y"] - df["GB2Y"]
+    df["CPIAUCSL"] = yoy_pct(df["CPIAUCSL"])
+    df["CPILFESL"] = yoy_pct(df["CPILFESL"])
+    df["PCEPI"]  = yoy_pct(df["PCEPI"])
+    df["PCEPILFE"]  = yoy_pct(df["PCEPILFE"])
+    df["PAYEMS"]  = df["PAYEMS"].dropna().diff(1)
+                
     LOOKBACK = 1260
 
-    tickers = [
-        # (sym, name, col, fmt, section, prev_offset, direction)
-        ("GDP",                 "US Real GDP QoQ",        "A191RL1Q225SBEA",  "pct",        "Macro",       1, 1 ),
-        ("CPI",                 "US CPI YoY",             "CPI_YOY",          "pct",        "Macro",       1, -1),
-        ("PCE",                 "US PCE YoY",             "PCE_YOY",          "pct",        "Macro",       1, -1),
-        ("T5YIFR",              "US 5Y5Y Forward Inflation Expectation Rate", "T5YIFR", "pct", "Macro",       5, -1),
-        ("UNRATE",              "US Unemployment Rate",   "UNRATE",           "pct",        "Macro",       1, -1),
-        ("NFP",                 "US Non-farm Payrolls",   "NFP_MOM",          "kppl",       "Macro",       1, 1 ),
-        ("FFR",                 "US Fed Funds Rate",      "DFEDTARU",         "range",        "US Rates",    1, -1 ),
-        ("SOFR",                "SOFR",                   "SOFR",             "pct",        "US Rates",    5, -1 ),
-        ("DGS2",                "US 2Y Treasury",         "DGS2",             "pct",        "US Rates",    5, 1 ),
-        ("DGS10",               "US 10Y Treasury",        "DGS10",            "pct",        "US Rates",    5, 1 ),
-        ("2Y10Y",               "US 2Y10Y Spread",        "2Y10Y",            "pct",        "US Rates",    5, 1 ),
-        ("YLDCURVE",            "US Yield Curve",         "__YIELDCURVE__",   "yc",         "US Rates",    0, 1 ),      
-        ("ECBDFR",              "ECB Deposit Facility Rate", "ECBDFR",          "pct",        "Euro Rates",   5, -1 ),
-        ("BAMLC0A0CMEY",        "Bofa US Corporate Index Effective Yield", "BAMLC0A0CMEY", "pct", "Credit", 5, 1),        
-        ("BAMLH0A0HYM2EY",      "BofA US High Yield Index Effective Yield", "BAMLH0A0HYM2EY", "pct", "Credit", 5, 1),
-        ("SPX",                 "S&P 500",                "^GSPC",            "idx",        "Equities",    5, 1 ),
-        ("^IXIC",               "NASDAQ Composite",       "^IXIC",            "idx",        "Equities",    5, 1 ),
-        ("^DJI",                "Dow Jones Industrial Average", "^DJI",       "idx",        "Equities",    5, 1 ),
-        ("FTSE",                "FTSE 100",               "^FTSE",            "idx",        "Equities",    5, 1 ),        
-        ("^GDAXI",              "DAX 40",                 "^GDAXI",           "idx",        "Equities",    5, 1 ),
-        ("^N225",               "Nikkei 225",             "^N225",            "idx",        "Equities",    5, 1 ),
-        ("VIX",                 "VIX",                    "^VIX",             "idx_twodp",  "Equities",    5, 1 ),
-        ("EURUSD=X",            "EUR/USD",                "EURUSD=X",         "idx_twodp",  "FX",          5, 1 ),
-        ("GBPUSD=X",            "GBP/USD",                "GBPUSD=X",         "idx_twodp",  "FX",          5, 1 ),
-        ("USDJPY=X",            "USD/JPY",                "USDJPY=X",         "idx_twodp",  "FX",          5, 1 ),
-        ("GC=F",                "CME Gold Futures",       "GC=F",             "idx",        "Commodities", 5, 1 ),
-        ("SI=F",                "CME Silver Futures",     "SI=F",             "idx_twodp",  "Commodities", 5, 1 ),
-        ("BZ=F",                "Brent Crude Oil",        "BZ=F",             "idx_twodp",  "Commodities", 5, 1 ),
-        ("CL=F",                "WTI Crude Oil",          "CL=F",             "idx_twodp",  "Commodities", 5, 1 )
-    ]
+    tickers = TICKERS
 
     YC_LABELS = ["1M", "3M", "6M", "1Y", "2Y", "5Y", "7Y", "10Y", "20Y", "30Y"]
     YC_COLS   = ["DGS1MO", "DGS3MO", "DGS6MO", "DGS1", "DGS2", "DGS5", "DGS7", "DGS10", "DGS20", "DGS30"]
 
     rows = []
-    for sym, name, col, fmt, section, prev_offset, direction in tickers:
+    for sym, name, fmt, section, prev_offset, direction, source in tickers:
 
         # ── Yield curve snapshot ──────────────────────────────────────────
-        if col == "__YIELDCURVE__":
+        if fmt == "yc":
             yc_vals, yc_date = [], None
             for yc_col in YC_COLS:
                 if yc_col in df.columns:
@@ -91,8 +69,8 @@ def build_ticker_rows(df: pd.DataFrame) -> str:
                     yc_vals.append(None)
             rows.append({
                 "type": "yieldcurve",
-                "sym": "YLDCURVE",
-                "name": "US Yield Curve",
+                "sym": sym,
+                "name": name,
                 "section": section,
                 "maturities": YC_LABELS,
                 "vals": yc_vals,
@@ -101,9 +79,9 @@ def build_ticker_rows(df: pd.DataFrame) -> str:
             continue
 
         # ── Regular series ────────────────────────────────────────────────
-        if col not in df.columns:
+        if sym not in df.columns:
             continue
-        series = df[col].dropna().tail(LOOKBACK)
+        series = df[sym].dropna().tail(LOOKBACK)
         if len(series) < 2:
             continue
 
@@ -360,7 +338,8 @@ function wireCommentary(sym) {{
 }}
 
 function fmtVal(v, fmt) {{
-  if (fmt === 'pct')      return v.toFixed(2) + '%';
+  if (fmt === 'pct_1dp')      return v.toFixed(1) + '%';
+  if (fmt === 'pct_2dp')      return v.toFixed(2) + '%';
   if (fmt === 'idx')      return Math.round(v).toLocaleString('en-US');
   if (fmt === 'idx_twodp') return v.toLocaleString('en-US', {{ minimumFractionDigits: 2, maximumFractionDigits: 2 }});
   if (fmt === 'kppl')     return (v >= 0 ? '+' : '') + Math.round(v).toLocaleString('en-US') + 'K';
@@ -370,10 +349,12 @@ function fmtVal(v, fmt) {{
 
 function fmtChg(abs, pct, fmt) {{
   const sign = abs >= 0 ? '+' : '';
-  if (fmt === 'pct')       return sign + abs.toFixed(2) + '%';
+  if (fmt === 'pct_1dp')       return sign + abs.toFixed(1) + '%';
+  if (fmt === 'pct_2dp')       return sign + (abs*100).toFixed(0) + 'bps';
   if (fmt === 'idx')       return sign + Math.round(abs).toLocaleString('en-US') + ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)';
   if (fmt === 'idx_twodp') return sign + abs.toLocaleString('en-US', {{ minimumFractionDigits: 2, maximumFractionDigits: 2 }}) + ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)';
   if (fmt === 'kppl')      return sign + Math.round(abs).toLocaleString('en-US') + 'K';
+  if (fmt === 'range')       return sign + (abs*100).toFixed(0) + 'bps';
   return sign + abs.toFixed(2) + ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)';
 }}
 
@@ -766,7 +747,6 @@ function sendHeightSlow() {{
 """
     return html
 
-
 # ── Streamlit layout ──────────────────────────────────────────────────────────
 st.set_page_config(page_title="Macro Dashboard", layout="wide", page_icon="📊")
 
@@ -801,12 +781,12 @@ N_SECTIONS = 3
 ROW_H      = 58
 SEC_H      = 44
 HEADER_H   = 44
-BUFFER     = 3000
+BUFFER     = 5000
 table_height = HEADER_H + N_ROWS * ROW_H + N_SECTIONS * SEC_H + BUFFER
 
 with open("dashboard.html", "w", encoding="utf-8") as f:
     f.write(ticker_html)
 
-components.html(ticker_html, height=table_height, scrolling=False)
+st.iframe(ticker_html, height=table_height)
 
 # python -m streamlit run C:\Users\xavie\NUS\Coding\Dashboard\dashboard.py --server.runOnSave true
