@@ -247,6 +247,10 @@ def build_ticker_rows(df: pd.DataFrame) -> str:
   <div class="ctrl-group">
     <button class="btn" onclick="expandAllRows()">Expand all</button>
     <button class="btn" onclick="closeAllRows()">Close all</button>
+    <button class="btn" onclick="exportCommentary()">Export commentary</button>
+    <button class="btn" onclick="document.getElementById('import-file').click()">Import commentary</button>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importCommentary(this)">
+    <button class="btn" onclick="clearAllCommentary()">Clear all commentary</button>
   </div>
 </div>
 
@@ -739,6 +743,104 @@ function sendHeight() {{
 
 function sendHeightSlow() {{
   [100, 300, 600].forEach(t => setTimeout(sendHeight, t));
+}}
+
+function exportCommentary() {{
+  const entries = {{}};
+
+  // Read directly from visible textareas — always reflects current state
+  ROWS.forEach(r => {{
+    const ta = document.getElementById('cmnt-' + r.sym);
+    if (ta && ta.value.trim()) {{
+      entries[r.sym] = ta.value.trim();
+    }}
+  }});
+
+  // Also pick up any localStorage entries for rows not currently rendered
+  for (let i = 0; i < localStorage.length; i++) {{
+    const key = localStorage.key(i);
+    if (key && key.startsWith(STORAGE_PREFIX)) {{
+      const sym = key.slice(STORAGE_PREFIX.length);
+      if (!(sym in entries)) {{
+        const val = localStorage.getItem(key);
+        if (val && val.trim()) entries[sym] = val.trim();
+      }}
+    }}
+  }}
+
+  if (Object.keys(entries).length === 0) {{
+    alert('No commentary to export.');
+    return;
+  }}
+
+  const blob = new Blob(
+    [JSON.stringify(entries, null, 2)],
+    {{ type: 'application/json' }}
+  );
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'commentary_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}}
+
+function importCommentary(input) {{
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {{
+    try {{
+      const entries = JSON.parse(e.target.result);
+      if (typeof entries !== 'object' || Array.isArray(entries))
+        throw new Error('Invalid format');
+
+      let count = 0;
+      for (const [sym, text] of Object.entries(entries)) {{
+        if (typeof text === 'string' && text.trim()) {{
+          localStorage.setItem(STORAGE_PREFIX + sym, text.trim());
+
+          // Live-update any visible textarea
+          const ta = document.getElementById('cmnt-' + sym);
+          if (ta) {{
+            ta.value = text.trim();
+            ta.classList.add('has-content');
+            autoGrow(ta);
+          }}
+          count++;
+        }}
+      }}
+
+      alert(`Imported ${{count}} comment${{count !== 1 ? 's' : ''}}.`);
+    }} catch (err) {{
+      alert('Import failed: ' + err.message);
+    }}
+    // Reset so the same file can be re-imported if needed
+    input.value = '';
+  }};
+  reader.readAsText(file);
+}}
+
+function clearAllCommentary() {{
+  if (!confirm('Clear all commentary?')) return;
+  
+  // Remove all macro_commentary_ keys from localStorage
+  const keysToDelete = [];
+  for (let i = 0; i < localStorage.length; i++) {{
+    const key = localStorage.key(i);
+    if (key && key.startsWith(STORAGE_PREFIX)) keysToDelete.push(key);
+  }}
+  keysToDelete.forEach(k => localStorage.removeItem(k));
+
+  // Clear all visible textareas too
+  ROWS.forEach(r => {{
+    const ta = document.getElementById('cmnt-' + symToId(r.sym));
+    if (ta) {{
+      ta.value = '';
+      ta.classList.remove('has-content');
+      ta.style.height = 'auto';
+    }}
+  }});
 }}
 
 </script>
