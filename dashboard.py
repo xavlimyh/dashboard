@@ -37,6 +37,8 @@ def build_ticker_rows(df: pd.DataFrame) -> str:
     df = df.copy()
     df["US2S10S"]    = df["DGS10"] - df["DGS2"]
     df["UK2S10S"]    = df["GB10Y"] - df["GB2Y"]
+    df["DE2S10S"]    = df["DE10Y"] - df["DE2Y"]
+    df["JP2S10S"]     = df["JP10Y"] - df["JP2Y"]
     df["CPIAUCSL"] = yoy_pct(df["CPIAUCSL"])
     df["CPILFESL"] = yoy_pct(df["CPILFESL"])
     df["PCEPI"]  = yoy_pct(df["PCEPI"])
@@ -234,6 +236,13 @@ def build_ticker_rows(df: pd.DataFrame) -> str:
   .commentary-wrap {{
     position: relative;
   }}
+  .commentary-updated {{
+    font-size: 10px;
+    color: #4b5563;
+    padding: 0 7px;
+    min-height: 12px;
+    font-style: italic;
+  }}
 </style>
 </head>
 <body>
@@ -276,12 +285,34 @@ const GLOBAL_DEFAULT = '{CHART_START_DATE}';
 const STORAGE_PREFIX = 'macro_commentary_';
 
 /* ── Commentary persistence (localStorage) ── */
+/* Stored as JSON: {{ text, ts }} where ts is an ISO timestamp of the last edit.
+   Older entries saved as a plain string are still read correctly (no timestamp). */
 function loadCommentary(sym) {{
-  try {{ return localStorage.getItem(STORAGE_PREFIX + sym) || ''; }}
-  catch(e) {{ return ''; }}
+  try {{
+    const raw = localStorage.getItem(STORAGE_PREFIX + sym);
+    if (!raw) return {{ text: '', ts: null }};
+    try {{
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && 'text' in parsed) {{
+        return {{ text: parsed.text || '', ts: parsed.ts || null }};
+      }}
+    }} catch(e) {{ /* not JSON — legacy plain-text entry */ }}
+    return {{ text: raw, ts: null }};
+  }} catch(e) {{ return {{ text: '', ts: null }}; }}
 }}
 function saveCommentary(sym, text) {{
-  try {{ localStorage.setItem(STORAGE_PREFIX + sym, text); }} catch(e) {{}}
+  const ts = new Date().toISOString();
+  try {{ localStorage.setItem(STORAGE_PREFIX + sym, JSON.stringify({{ text, ts }})); }} catch(e) {{}}
+  return ts;
+}}
+function fmtTs(iso) {{
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${{d.getDate()}} ${{mon[d.getMonth()]}} ${{d.getFullYear()}}, ${{hh}}:${{mm}}`;
 }}
 
 /* Auto-grow textarea to fit its content */
@@ -299,18 +330,23 @@ function makeCommentaryCell(sym) {{
   wrap.className = 'commentary-wrap';
   const ta = document.createElement('textarea');
   ta.id = 'cmnt-' + sym;
-  ta.className = 'commentary-box' + (saved ? ' has-content' : '');
+  ta.className = 'commentary-box' + (saved.text ? ' has-content' : '');
   ta.placeholder = 'Add commentary\u2026';
   ta.rows = 1;
   ta.spellcheck = false;
-  ta.value = saved;
+  ta.value = saved.text;
   const flash = document.createElement('span');
   flash.className = 'save-flash';
   flash.id = 'flash-' + sym;
   flash.textContent = 'saved';
+  const updated = document.createElement('div');
+  updated.className = 'commentary-updated';
+  updated.id = 'updated-' + sym;
+  updated.textContent = saved.ts ? ('Updated ' + fmtTs(saved.ts)) : '';
   wrap.appendChild(ta);
   wrap.appendChild(flash);
   td.appendChild(wrap);
+  td.appendChild(updated);
   return td;
 }}
 
@@ -326,11 +362,15 @@ function wireCommentary(sym) {{
     ta.classList.toggle('has-content', ta.value.trim().length > 0);
     clearTimeout(saveTimers[sym]);
     saveTimers[sym] = setTimeout(() => {{
-      saveCommentary(sym, ta.value);
+      const ts = saveCommentary(sym, ta.value);
       const flash = document.getElementById('flash-' + sym);
       if (flash) {{
         flash.classList.add('show');
         setTimeout(() => flash.classList.remove('show'), 1200);
+      }}
+      const updatedEl = document.getElementById('updated-' + sym);
+      if (updatedEl) {{
+        updatedEl.textContent = ta.value.trim() ? ('Updated ' + fmtTs(ts)) : '';
       }}
     }}, 600);
   }});
@@ -752,7 +792,8 @@ function exportCommentary() {{
   ROWS.forEach(r => {{
     const ta = document.getElementById('cmnt-' + r.sym);
     if (ta && ta.value.trim()) {{
-      entries[r.sym] = ta.value.trim();
+      const saved = loadCommentary(r.sym);
+      entries[r.sym] = {{ text: ta.value.trim(), ts: saved.ts || new Date().toISOString() }};
     }}
   }});
 
@@ -762,8 +803,10 @@ function exportCommentary() {{
     if (key && key.startsWith(STORAGE_PREFIX)) {{
       const sym = key.slice(STORAGE_PREFIX.length);
       if (!(sym in entries)) {{
-        const val = localStorage.getItem(key);
-        if (val && val.trim()) entries[sym] = val.trim();
+        const saved = loadCommentary(sym);
+        if (saved.text && saved.text.trim()) {{
+          entries[sym] = {{ text: saved.text.trim(), ts: saved.ts }};
+        }}
       }}
     }}
   }}
@@ -796,17 +839,30 @@ function importCommentary(input) {{
         throw new Error('Invalid format');
 
       let count = 0;
-      for (const [sym, text] of Object.entries(entries)) {{
-        if (typeof text === 'string' && text.trim()) {{
-          localStorage.setItem(STORAGE_PREFIX + sym, text.trim());
+      for (const [sym, entry] of Object.entries(entries)) {{
+        // Support both the new {{text, ts}} format and legacy plain-string entries
+        let text = null, ts = null;
+        if (typeof entry === 'string') {{
+          text = entry;
+        }} else if (entry && typeof entry === 'object' && typeof entry.text === 'string') {{
+          text = entry.text;
+          ts = entry.ts || null;
+        }}
 
-          // Live-update any visible textarea
+        if (text && text.trim()) {{
+          text = text.trim();
+          ts = ts || new Date().toISOString();
+          localStorage.setItem(STORAGE_PREFIX + sym, JSON.stringify({{ text, ts }}));
+
+          // Live-update any visible textarea and its "updated" label
           const ta = document.getElementById('cmnt-' + sym);
           if (ta) {{
-            ta.value = text.trim();
+            ta.value = text;
             ta.classList.add('has-content');
             autoGrow(ta);
           }}
+          const updatedEl = document.getElementById('updated-' + sym);
+          if (updatedEl) updatedEl.textContent = 'Updated ' + fmtTs(ts);
           count++;
         }}
       }}
@@ -840,6 +896,8 @@ function clearAllCommentary() {{
       ta.classList.remove('has-content');
       ta.style.height = 'auto';
     }}
+    const updatedEl = document.getElementById('updated-' + r.sym);
+    if (updatedEl) updatedEl.textContent = '';
   }});
 }}
 
@@ -850,7 +908,7 @@ function clearAllCommentary() {{
     return html
 
 # ── Streamlit layout ──────────────────────────────────────────────────────────
-st.set_page_config(page_title="Macro Dashboard", layout="wide", page_icon="📊")
+st.set_page_config(page_title="Macro Dashboard", layout="wide", page_icon="")
 
 st.markdown("""
 <style>
