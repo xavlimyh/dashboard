@@ -247,15 +247,6 @@ def build_ticker_rows(df: pd.DataFrame, tickers: list = None) -> str:
     text-align: right
   }}
 
-  /* ── Sticky first column (keeps the row label visible while scrolling sideways) ── */
-  th:first-child, td:first-child {{
-    position: sticky; left: 0; z-index: 2;
-    background: #0e1117;
-  }}
-  tr.section-row td:first-child {{ background: #1f2937; z-index: 3; }}
-  tr.ticker-row:hover td:first-child,
-  tr.ticker-row.active td:first-child {{ background: #161921; }}
-
   /* ── Mobile ── */
   @media (max-width: 640px) {{
     html, body {{ font-size: 11.5px; }}
@@ -964,22 +955,22 @@ def render_page(page_title: str):
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown(f"<h1 style='font-family: Segoe UI; color: white;'>{page_title}</h1>", unsafe_allow_html=True)
     st.markdown("""
     <style>
     h1 {
         font-size: 42px !important;
         font-weight: 700 !important;
-        font-family: "Segoe UI", sans-serif;
-        color: #f0f0f0;
+        font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", sans-serif;
+        color: #f0f0f0 !important;
     }
     @media (max-width: 640px) {
       h1 { font-size: 26px !important; }
     }
     </style>
     """, unsafe_allow_html=True)
+    st.markdown(f"<h1>{page_title}</h1>", unsafe_allow_html=True)
     st.markdown(
-        f"<div style='color:#888;font-family:Segoe UI;font-size:0.82rem;margin-bottom:1.5rem'>",
+        "<div style='color:#888;font-family:\"Segoe UI\",-apple-system,BlinkMacSystemFont,\"Roboto\",sans-serif;font-size:0.82rem;margin-bottom:1.5rem'>",
         unsafe_allow_html=True,
     )
 
