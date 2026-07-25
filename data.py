@@ -46,7 +46,10 @@ TICKERS = [
     ("DGS30",               "30Y Treasury",                                               "pct_2dp",        "US Rates",       5,  -1,  "fred"),
     ("US2S10S",             "US 2s10s Spread",                                            "pct_2dp",        "US Rates",       5,  1,  "derived"),
     ("USYIELDCURVE",        "Yield Curve",                                                "yc",             "US Rates",       0,  1,  "derived"),      
-    ("ECBDFR",              "ECB Deposit Facility Rate",                                  "pct_2dp",        "Euro Rates",   5, -1,  "fred"),
+    ("ECBDFR",              "ECB Deposit Facility Rate",                                  "pct_2dp",        "Euro Rates",     5, -1,  "fred"),
+    ("DE2Y",                "German 2Y Bund",                                             "pct_2dp",        "Euro Rates",     5, -1,  "cnbc"),
+    ("DE10Y",               "German 10Y Bund",                                            "pct_2dp",        "Euro Rates",     5, -1,  "cnbc"), 
+    ("DE2S10S",             "German 2s10s Spread",                                        "pct_2dp",        "Euro Rates",     5,  1,  "derived"),
     ("IUDBEDR",             "BoE Bank Rate",                                              "pct_2dp",        "UK Rates",       5, -1,  "boe"),
     ("IUDSOIA",             "SONIA",                                                      "pct_2dp",        "UK Rates",       5, -1,  "boe"),
     ("GB1Y",                "1Y Gilt",                                                    "pct_2dp",        "UK Rates",       5, -1,  "cnbc"),      
@@ -58,25 +61,39 @@ TICKERS = [
     ("GB30Y",               "30Y Gilt",                                                   "pct_2dp",        "UK Rates",       5, -1,  "cnbc"),
     ("UK2S10S",             "UK 2s10s Spread",                                            "pct_2dp",        "UK Rates",       5, -1,  "derived"),
     ("FM01_STRDCLUCON",     "Japan Uncollateralised Overnight Call Rate",                 "pct_2dp",        "Japan Rates",   5, -1,  "boj"),
+    ("JP2Y",                "Japan 2Y Treasury",                                          "pct_2dp",        "Japan Rates",   5, -1,  "cnbc"),
     ("JP10Y",               "Japan 10Y Treasury",                                         "pct_2dp",        "Japan Rates",   5, -1,  "cnbc"),
+    ("JP2S10S",             "Japan 2s10s Spread",                                         "pct_2dp",        "Japan Rates",   5,  1,  "derived"),
     ("BAMLC0A0CMEY",        "Bofa US Corporate Index Effective Yield",                    "pct_2dp",        "US Credit",      5,  -1,  "fred"),        
     ("BAMLH0A0HYM2EY",      "BofA US High Yield Index Effective Yield",                   "pct_2dp",        "US Credit",      5,  -1,  "fred"),
-    ("^GSPC",               "S&P 500",                                                    "idx",            "Equities",       5,  1,  "yf"),
-    ("^VIX",                "VIX",                                                        "idx_twodp",      "Equities",       5,  1,  "yf"),
-    ("^IXIC",               "NASDAQ Composite",                                           "idx",            "Equities",       5,  1,  "yf"),
-    ("^DJI",                "Dow Jones Industrial Average",                               "idx",            "Equities",       5,  1,  "yf"),
-    ("^FTSE",               "FTSE 100",                                                   "idx",            "Equities",       5,  1,  "yf"),       
-    ("^STOXX",              "STOXX 600",                                                  "idx_twodp",      "Equities",       5,  1,  "yf"),  
-    ("^GDAXI",              "DAX 40",                                                     "idx",            "Equities",       5,  1,  "yf"),
-    ("^N225",               "Nikkei 225",                                                 "idx",            "Equities",       5,  1,  "yf"),
-    ("^AXJO",               "ASX 200",                                                    "idx",            "Equities",       5,  1,  "yf"),
-    ("^HSI",                "Hang Seng Index",                                            "idx",            "Equities",       5,  1,  "yf"),
-    ("000001.SS",           "Shanghai Composite Index",                                   "idx",            "Equities",       5,  1,  "yf"),
-    ("^KS11",               "KOSPI",                                                      "idx",            "Equities",       5,  1,  "yf"),
+    ("^GSPC",               "S&P 500",                                                    "idx",            "Indices",       5,  1,  "yf"),
+    ("^VIX",                "VIX",                                                        "idx_twodp",      "Indices",       5,  1,  "yf"),
+    ("^IXIC",               "NASDAQ Composite",                                           "idx",            "Indices",       5,  1,  "yf"),
+    ("^DJI",                "Dow Jones Industrial Average",                               "idx",            "Indices",       5,  1,  "yf"),
+    ("^FTSE",               "FTSE 100",                                                   "idx",            "Indices",       5,  1,  "yf"),       
+    ("^STOXX",              "STOXX 600",                                                  "idx_twodp",      "Indices",       5,  1,  "yf"),  
+    ("^GDAXI",              "DAX 40",                                                     "idx",            "Indices",       5,  1,  "yf"),
+    ("^N225",               "Nikkei 225",                                                 "idx",            "Indices",       5,  1,  "yf"),
+    ("^HSI",                "Hang Seng Index",                                            "idx",            "Indices",       5,  1,  "yf"),
+    ("000001.SS",           "Shanghai Composite Index",                                   "idx",            "Indices",       5,  1,  "yf"),
+    ("^KS11",               "KOSPI",                                                      "idx",            "Indices",       5,  1,  "yf"),
+    ("^AXJO",               "ASX 200",                                                    "idx",            "Indices",       5,  1,  "yf"),
+    ("^STI",                "Straits Times Index",                                        "idx",            "Indices",       5,  1,  "yf"),
+    ("NVDA",                "NVDA",                                                       "idx_twodp",      "Equities",       5,  1,  "yf"),
+    ("AAPL",                "AAPL",                                                       "idx_twodp",      "Equities",       5,  1,  "yf"),
+    ("GOOG",                "GOOG",                                                       "idx_twodp",      "Equities",       5,  1,  "yf"),
+    ("MSFT",                "MSFT",                                                       "idx_twodp",      "Equities",       5,  1,  "yf"),
+    ("AMZN",                "AMZN",                                                       "idx_twodp",      "Equities",       5,  1,  "yf"),   
+    ("META",                "META",                                                       "idx_twodp",      "Equities",       5,  1,  "yf"),      
+    ("MAQ.AX",              "ASX: MAQ",                                                   "idx_twodp",      "Equities",       5,  1,  "yf"),
+    ("SNPS",                "SNPS",                                                       "idx_twodp",      "Equities",       5,  1,  "yf"), 
+    ("SPGI",                "SPGI",                                                       "idx_twodp",      "Equities",       5,  1,  "yf"),   
+    ("DX-Y.NYB",            "DXY",                                                        "idx_twodp",      "FX",             5,  1,  "yf"),    
     ("EURUSD=X",            "EURUSD",                                                     "idx_twodp",      "FX",             5,  1,  "yf"),
     ("GBPUSD=X",            "GBPUSD",                                                     "idx_twodp",      "FX",             5,  1,  "yf"),
     ("USDJPY=X",            "USDJPY",                                                     "idx_twodp",      "FX",             5,  1,  "yf"),
     ("USDCNY=X",            "USDCNY",                                                     "idx_twodp",      "FX",             5,  1,  "yf"),
+    ("USDSGD=X",            "USDSGD",                                                     "idx_twodp",      "FX",             5,  1,  "yf"),    
     ("GC=F",                "CME Gold Futures",                                           "idx",            "Commodities",    5,  1,  "yf"),
     ("SI=F",                "CME Silver Futures",                                         "idx_twodp",      "Commodities",    5,  1,  "yf"),
     ("BZ=F",                "Brent Crude Oil Futures",                                    "idx_twodp",      "Commodities",    5,  1,  "yf"),
@@ -110,6 +127,25 @@ def get_yf(yf_ids):
     print(f"{len(yf_ids)} Yahoo Finance queries complete.")
     yf_df_close = yf_df_all["Close"]
     return yf_df_close
+
+def get_econ_cal():                      # Uses yfinance, start date by default set as today, end date is (today+7 days)
+    all_pages = []
+    cal = pd.DataFrame()
+    empty = False
+    offset = 0
+    while empty == False:
+        page = yf.Calendars().get_economic_events_calendar(limit=100, offset=offset)
+        if page.empty:
+            empty = True
+        else:
+            offset += 100
+            all_pages.append(page)
+    cal = pd.concat(all_pages)
+    cal["Event"] = cal.index
+    cal = cal.set_index("Event Time")
+    cal = cal.sort_index()
+    cal = cal[["Event", "Region", "For", "Actual", "Expected", "Last", "Revised"]]
+    return cal
 
 def get_cnbc(cnbc_ids):
     print(f"{len(cnbc_ids)} CNBC queries complete.")
@@ -147,6 +183,3 @@ def load_all_data():
     print(df_merged)
 
     return df_merged
-
-df = load_all_data()
-print(df.notna().sum().to_string())

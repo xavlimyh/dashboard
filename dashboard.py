@@ -31,7 +31,7 @@ def yoy_pct(series: pd.Series) -> pd.Series:
     return (s / lagged.reindex(s.index) - 1) * 100
 
 # ── Ticker rows builder ───────────────────────────────────────────────────────
-def build_ticker_rows(df: pd.DataFrame) -> str:
+def build_ticker_rows(df: pd.DataFrame, tickers: list = None) -> str:
 
     # ── Derived series ─────────────────────────────────────────────────────
     df = df.copy()
@@ -47,7 +47,8 @@ def build_ticker_rows(df: pd.DataFrame) -> str:
                 
     LOOKBACK = 1260
 
-    tickers = TICKERS
+    if tickers is None:
+        tickers = TICKERS
 
     YC_LABELS = ["1M", "3M", "6M", "1Y", "2Y", "5Y", "7Y", "10Y", "20Y", "30Y"]
     YC_COLS   = ["DGS1MO", "DGS3MO", "DGS6MO", "DGS1", "DGS2", "DGS5", "DGS7", "DGS10", "DGS20", "DGS30"]
@@ -239,9 +240,9 @@ def build_ticker_rows(df: pd.DataFrame) -> str:
   .commentary-updated {{
     font-size: 10px;
     color: #4b5563;
-    padding: 0 7px;
     min-height: 12px;
     font-style: italic;
+    text-align: right
   }}
 </style>
 </head>
@@ -312,7 +313,7 @@ function fmtTs(iso) {{
   const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const hh = String(d.getHours()).padStart(2, '0');
   const mm = String(d.getMinutes()).padStart(2, '0');
-  return `${{d.getDate()}} ${{mon[d.getMonth()]}} ${{d.getFullYear()}}, ${{hh}}:${{mm}}`;
+  return `${{d.getDate()}} ${{mon[d.getMonth()]}} ${{d.getFullYear()}} ${{hh}}:${{mm}}`;
 }}
 
 /* Auto-grow textarea to fit its content */
@@ -323,7 +324,13 @@ function autoGrow(el) {{
 
 /* Build the commentary <td> for a given sym */
 function makeCommentaryCell(sym) {{
-  const saved = loadCommentary(sym);
+  let saved = loadCommentary(sym);
+
+  if (saved.text && saved.text.trim() && !saved.ts) {{
+    const ts = saveCommentary(sym, saved.text);
+    saved = {{ text: saved.text, ts }};
+  }}
+
   const td = document.createElement('td');
   td.className = 'commentary-cell';
   const wrap = document.createElement('div');
@@ -342,7 +349,7 @@ function makeCommentaryCell(sym) {{
   const updated = document.createElement('div');
   updated.className = 'commentary-updated';
   updated.id = 'updated-' + sym;
-  updated.textContent = saved.ts ? ('Updated ' + fmtTs(saved.ts)) : '';
+  updated.textContent = (saved.text && saved.text.trim()) ? (fmtTs(saved.ts)) : '';
   wrap.appendChild(ta);
   wrap.appendChild(flash);
   td.appendChild(wrap);
@@ -370,7 +377,7 @@ function wireCommentary(sym) {{
       }}
       const updatedEl = document.getElementById('updated-' + sym);
       if (updatedEl) {{
-        updatedEl.textContent = ta.value.trim() ? ('Updated ' + fmtTs(ts)) : '';
+        updatedEl.textContent = ta.value.trim() ? (fmtTs(ts)) : '';
       }}
     }}, 600);
   }});
@@ -907,46 +914,85 @@ function clearAllCommentary() {{
 """
     return html
 
-# ── Streamlit layout ──────────────────────────────────────────────────────────
-st.set_page_config(page_title="Macro Dashboard", layout="wide", page_icon="")
-
-st.markdown("""
-<style>
-#MainMenu, footer, header { visibility: hidden; }
-.block-container { padding-top: 1.5rem !important; max-width: 2160px !important; }
-</style>
-""", unsafe_allow_html=True)
-
-st.markdown("<h1 style='font-family: Segoe UI; color: white;'>Macro Dashboard</h1>", unsafe_allow_html=True)
-st.markdown("""
-<style>
-h1 {
-    font-size: 42px !important;
-    font-weight: 700 !important;
-    font-family: "Segoe UI", sans-serif;
-    color: #f0f0f0;
+# ── Page → section mapping ────────────────────────────────────────────────────
+# Each Streamlit "page" pulls together several of the original ticker sections.
+PAGE_SECTIONS = {
+    "Macro & Rates":     ["US Macro", "US Rates", "Euro Rates", "UK Rates", "Japan Rates", "US Credit"],
+    "Equities":            ["Indices", "Equities"],
+    "FX & Commodities":  ["FX", "Commodities"],
 }
-</style>
-""", unsafe_allow_html=True)
-st.markdown(
-    f"<div style='color:#888;font-family:Segoe UI;font-size:0.82rem;margin-bottom:1.5rem'>"
-    f"Last updated: {datetime.now().strftime('%d %b %Y %H:%M')}</div>",
-    unsafe_allow_html=True,
-)
 
-ticker_html = build_ticker_rows(combined_df)
+# ── Shared page renderer ──────────────────────────────────────────────────────
+def render_page(page_title: str):
+    sections = PAGE_SECTIONS[page_title]
+    page_tickers = [t for t in TICKERS if t[3] in sections]
 
-N_ROWS     = 12
-N_SECTIONS = 3
-ROW_H      = 58
-SEC_H      = 44
-HEADER_H   = 44
-BUFFER     = 5000
-table_height = HEADER_H + N_ROWS * ROW_H + N_SECTIONS * SEC_H + BUFFER
+    st.markdown("""
+    <style>
+    #MainMenu, footer { visibility: hidden; }
+    .block-container { padding-top: 1.5rem !important; max-width: 2160px !important; }
+    </style>
+    """, unsafe_allow_html=True)
 
-with open("dashboard.html", "w", encoding="utf-8") as f:
-    f.write(ticker_html)
+    st.markdown(f"<h1 style='font-family: Segoe UI; color: white;'>{page_title}</h1>", unsafe_allow_html=True)
+    st.markdown("""
+    <style>
+    h1 {
+        font-size: 42px !important;
+        font-weight: 700 !important;
+        font-family: "Segoe UI", sans-serif;
+        color: #f0f0f0;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    st.markdown(
+        f"<div style='color:#888;font-family:Segoe UI;font-size:0.82rem;margin-bottom:1.5rem'>",
+        unsafe_allow_html=True,
+    )
 
-st.iframe(ticker_html, height=table_height)
+    ticker_html = build_ticker_rows(combined_df, page_tickers)
+
+    n_rows     = len(page_tickers)
+    n_sections = len(set(t[3] for t in page_tickers))
+    ROW_H      = 58
+    SEC_H      = 44
+    HEADER_H   = 44
+    BUFFER     = 5000
+    table_height = HEADER_H + n_rows * ROW_H + n_sections * SEC_H + BUFFER
+
+    safe_name = page_title.lower().replace(" ", "_")
+    with open(f"dashboard_{safe_name}.html", "w", encoding="utf-8") as f:
+        f.write(ticker_html)
+
+    st.iframe(ticker_html, height=table_height)
+
+
+def macro_and_rates_page():
+    render_page("Macro & Rates")
+
+
+def equities_page():
+    render_page("Equities")
+
+
+def fx_and_commodities_page():
+    render_page("FX & Commodities")
+
+
+# ── Streamlit layout: native multi-page sidebar navigation ───────────────────
+# st.set_page_config must be the very first Streamlit command run.
+st.set_page_config(page_title="Macro Dashboard", layout="wide", page_icon="", initial_sidebar_state="expanded")
+
+pages = [
+    st.Page(macro_and_rates_page,    title="Macro & Rates",    default=True),
+    st.Page(equities_page,           title="Equities"),
+    st.Page(fx_and_commodities_page, title="FX & Commodities"),
+]
+
+# st.navigation renders a native, collapsible sidebar (the built-in ">" arrow
+# expands/hides it) with just the three short page labels above — no extra
+# widgets or custom CSS are needed to keep it minimal.
+pg = st.navigation(pages, position="sidebar")
+pg.run()
 
 # python -m streamlit run C:\Users\xavie\NUS\Coding\Dashboard\dashboard.py --server.runOnSave true
