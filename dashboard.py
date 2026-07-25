@@ -981,7 +981,7 @@ def fx_and_commodities_page():
 
 # ── Streamlit layout: native multi-page sidebar navigation ───────────────────
 # st.set_page_config must be the very first Streamlit command run.
-st.set_page_config(page_title="Macro Dashboard", layout="centred", page_icon="", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Macro Dashboard", layout="centered", page_icon="", initial_sidebar_state="collapsed")
 
 pages = [
     st.Page(macro_and_rates_page,    title="Macro & Rates",    default=True),
