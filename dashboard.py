@@ -115,6 +115,7 @@ def build_ticker_rows(df: pd.DataFrame, tickers: list = None) -> str:
 <html>
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <style>
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
   html, body {{
@@ -122,6 +123,7 @@ def build_ticker_rows(df: pd.DataFrame, tickers: list = None) -> str:
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 13px; overflow: visible; height: auto;
   }}
+  .table-scroll {{ width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }}
   table {{ width: 100%; border-collapse: collapse; }}
   thead tr {{ border-bottom: 1px solid #2a2d35; }}
   th {{
@@ -244,6 +246,29 @@ def build_ticker_rows(df: pd.DataFrame, tickers: list = None) -> str:
     font-style: italic;
     text-align: right
   }}
+
+  /* ── Sticky first column (keeps the row label visible while scrolling sideways) ── */
+  th:first-child, td:first-child {{
+    position: sticky; left: 0; z-index: 2;
+    background: #0e1117;
+  }}
+  tr.section-row td:first-child {{ background: #1f2937; z-index: 3; }}
+  tr.ticker-row:hover td:first-child,
+  tr.ticker-row.active td:first-child {{ background: #161921; }}
+
+  /* ── Mobile ── */
+  @media (max-width: 640px) {{
+    html, body {{ font-size: 11.5px; }}
+    .controls {{ flex-wrap: wrap; gap: 8px; padding: 8px; }}
+    .ctrl-group {{ flex-wrap: wrap; gap: 6px; }}
+    th, td {{ padding: 7px 8px; }}
+    th:first-child, td:first-child {{ padding-left: 10px; }}
+    .sym {{ font-size: 12px; }}
+    .val {{ font-size: 13px; }}
+    .spark-wrap {{ width: 80px; height: 30px; }}
+    td.commentary-cell {{ width: 180px; min-width: 180px; }}
+    .expand-inner {{ padding: 10px 10px 14px; }}
+  }}
 </style>
 </head>
 <body>
@@ -264,6 +289,7 @@ def build_ticker_rows(df: pd.DataFrame, tickers: list = None) -> str:
   </div>
 </div>
 
+<div class="table-scroll">
 <table>
   <thead>
     <tr>
@@ -277,6 +303,7 @@ def build_ticker_rows(df: pd.DataFrame, tickers: list = None) -> str:
   </thead>
   <tbody id="tb"></tbody>
 </table>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
@@ -931,6 +958,9 @@ def render_page(page_title: str):
     <style>
     #MainMenu, footer { visibility: hidden; }
     .block-container { padding-top: 1.5rem !important; max-width: 2160px !important; }
+    @media (max-width: 640px) {
+      .block-container { padding-left: 0.6rem !important; padding-right: 0.6rem !important; padding-top: 0.8rem !important; }
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -942,6 +972,9 @@ def render_page(page_title: str):
         font-weight: 700 !important;
         font-family: "Segoe UI", sans-serif;
         color: #f0f0f0;
+    }
+    @media (max-width: 640px) {
+      h1 { font-size: 26px !important; }
     }
     </style>
     """, unsafe_allow_html=True)
