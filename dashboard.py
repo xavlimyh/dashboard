@@ -992,32 +992,14 @@ def render_page(page_title: str):
 
     st.iframe(ticker_html, height=table_height)
 
-
-def macro_and_rates_page():
-    render_page("Macro & Rates")
-
-
-def equities_page():
-    render_page("Equities")
-
-
-def fx_and_commodities_page():
-    render_page("FX & Commodities")
-
-
 # ── Streamlit layout: native multi-page sidebar navigation ───────────────────
-# st.set_page_config must be the very first Streamlit command run.
 st.set_page_config(page_title="Macro Dashboard", layout="centered", page_icon="", initial_sidebar_state="collapsed")
 
 pages = [
-    st.Page(macro_and_rates_page,    title="Macro & Rates",    default=True),
-    st.Page(equities_page,           title="Equities"),
-    st.Page(fx_and_commodities_page, title="FX & Commodities"),
+    st.Page(lambda: render_page("Macro & Rates"),    title="Macro & Rates",    default=True),
+    st.Page(lambda: render_page("Equities"),           title="Equities"),
+    st.Page(lambda: render_page("FX & Commodities"), title="FX & Commodities"),
 ]
-
-# st.navigation renders a native, collapsible sidebar (the built-in ">" arrow
-# expands/hides it) with just the three short page labels above — no extra
-# widgets or custom CSS are needed to keep it minimal.
 pg = st.navigation(pages, position="sidebar")
 pg.run()
 
