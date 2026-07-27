@@ -24,10 +24,10 @@ pd.set_option("display.width", None)
 pd.set_option("display.float_format", "{:,.2f}".format)
 
 # ── Date-aware YoY % change, handles missing months ─────────────
-def yoy_pct(series: pd.Series) -> pd.Series:
+def pct_change(series: pd.Series, periods: int) -> pd.Series:
     s = series.dropna()
     lagged = s.copy()
-    lagged.index = lagged.index + pd.DateOffset(months=12)
+    lagged.index = lagged.index + pd.DateOffset(months=periods)
     return (s / lagged.reindex(s.index) - 1) * 100
 
 # ── Ticker rows builder ───────────────────────────────────────────────────────
@@ -38,12 +38,13 @@ def build_ticker_rows(df: pd.DataFrame, tickers: list = None) -> str:
     df["US2S10S"]    = df["DGS10"] - df["DGS2"]
     df["UK2S10S"]    = df["GB10Y"] - df["GB2Y"]
     df["DE2S10S"]    = df["DE10Y"] - df["DE2Y"]
+    df["JPNRGDPEXP"] = pct_change(df["JPNRGDPEXP"], 1)
     df["JP2S10S"]     = df["JP10Y"] - df["JP2Y"]
     df["JP2S30S"]     = df["JP30Y"] - df["JP2Y"]
-    df["CPIAUCSL"] = yoy_pct(df["CPIAUCSL"])
-    df["CPILFESL"] = yoy_pct(df["CPILFESL"])
-    df["PCEPI"]  = yoy_pct(df["PCEPI"])
-    df["PCEPILFE"]  = yoy_pct(df["PCEPILFE"])
+    df["CPIAUCSL"] = pct_change(df["CPIAUCSL"], 12)
+    df["CPILFESL"] = pct_change(df["CPILFESL"], 12)
+    df["PCEPI"]  = pct_change(df["PCEPI"], 12)
+    df["PCEPILFE"]  = pct_change(df["PCEPILFE"], 12)
     df["PAYEMS"]  = df["PAYEMS"].dropna().diff(1)
                 
     LOOKBACK = 1260
