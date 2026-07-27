@@ -65,6 +65,7 @@ TICKERS = [
     ("JP10Y",               "10Y Japan Government Bond",                                  "pct_2dp",        "Japan Rates",   5, -1,  "cnbc"),
     ("JP30Y",               "30Y Japan Government Bond",                                  "pct_2dp",        "Japan Rates",   5, -1,  "cnbc"),    
     ("JP2S10S",             "Japan 2s10s Spread",                                         "pct_2dp",        "Japan Rates",   5,  1,  "derived"),
+    ("JP2S30S",             "Japan 2s30s Spread",                                         "pct_2dp",        "Japan Rates",   5,  1,  "derived"),    
     ("BAMLC0A0CMEY",        "Bofa US Corporate Index Effective Yield",                    "pct_2dp",        "US Credit",      5,  -1,  "fred"),        
     ("BAMLH0A0HYM2EY",      "BofA US High Yield Index Effective Yield",                   "pct_2dp",        "US Credit",      5,  -1,  "fred"),
     ("^GSPC",               "S&P 500",                                                    "idx",            "Indices",       5,  1,  "yf"),
