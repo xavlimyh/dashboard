@@ -38,11 +38,7 @@ def build_ticker_rows(df: pd.DataFrame, tickers: list = None) -> str:
     df["US2S10S"]    = df["DGS10"] - df["DGS2"]
     df["UK2S10S"]    = df["GB10Y"] - df["GB2Y"]
     df["DE2S10S"]    = df["DE10Y"] - df["DE2Y"]
-<<<<<<< HEAD
-    # df["JPNRGDPEXP"] = pct_change(df["JPNRGDPEXP"], 1)
-=======
-    df["JPNNGDP"] = ((1 + pct_change(df["JPNNGDP"], 3) / 100) ** 4 - 1) * 100
->>>>>>> 32fe834a66f9c9f01ec312f83ed2c9680bf4054c
+    df["JPNRGDPEXP"] = ((1 + pct_change(df["JPNRGDPEXP"], 3) / 100) ** 4 - 1) * 100
     df["JP2S10S"]     = df["JP10Y"] - df["JP2Y"]
     df["JP2S30S"]     = df["JP30Y"] - df["JP2Y"]
     df["CPIAUCSL"] = pct_change(df["CPIAUCSL"], 12)
