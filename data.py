@@ -60,7 +60,7 @@ TICKERS = [
     ("GB20Y",               "20Y Gilt",                                                   "pct_2dp",        "UK Rates",       5, -1,  "cnbc"),
     ("GB30Y",               "30Y Gilt",                                                   "pct_2dp",        "UK Rates",       5, -1,  "cnbc"),
     ("UK2S10S",             "UK 2s10s Spread",                                            "pct_2dp",        "UK Rates",       5, -1,  "derived"),
-    ("JPNRGDPEXP",          "Japan Real GDP QoQ",                                         "pct_1dp",        "Japan Macro",    1,  1,  "fred"),    
+    ("JPNRGDPEXP",          "Japan Real GDP QoQ",                                         "pct_1dp",        "Japan Rates",    1,  1,  "fred"),    
     ("FM01_STRDCLUCON",     "Japan Uncollateralised Overnight Call Rate",                 "pct_2dp",        "Japan Rates",   5, -1,  "boj"),
     ("JP2Y",                "2Y Japan Government Bond",                                   "pct_2dp",        "Japan Rates",   5, -1,  "cnbc"),
     ("JP10Y",               "10Y Japan Government Bond",                                  "pct_2dp",        "Japan Rates",   5, -1,  "cnbc"),
