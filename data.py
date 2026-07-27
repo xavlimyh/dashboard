@@ -63,7 +63,6 @@ TICKERS = [
     ("JPNRGDPEXP",          "Japan Real GDP QoQ",                                         "pct_1dp",        "Japan Macro",    1,  1,  "fred"),    
     ("FM01_STRDCLUCON",     "Japan Uncollateralised Overnight Call Rate",                 "pct_2dp",        "Japan Rates",    5, -1,  "boj"),
     ("JP3M",                "3mo Japan Government Bond",                                  "pct_2dp",        "Japan Rates",    5, -1,  "cnbc"),
-    ("JP1Y",                "1Y Japan Government Bond",                                   "pct_2dp",        "Japan Rates",    5, -1,  "cnbc"),
     ("JP2Y",                "2Y Japan Government Bond",                                   "pct_2dp",        "Japan Rates",    5, -1,  "cnbc"),
     ("JP5Y",                "5Y Japan Government Bond",                                   "pct_2dp",        "Japan Rates",    5, -1,  "cnbc"),
     ("JP10Y",               "10Y Japan Government Bond",                                  "pct_2dp",        "Japan Rates",    5, -1,  "cnbc"),
