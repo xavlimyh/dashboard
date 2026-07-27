@@ -937,8 +937,8 @@ function clearAllCommentary() {{
 # ── Page → section mapping ────────────────────────────────────────────────────
 # Each Streamlit "page" pulls together several of the original ticker sections.
 PAGE_SECTIONS = {
-    "Macro & Rates":     ["US Macro", "US Rates", "Euro Rates", "UK Rates", "Japan Rates", "US Credit"],
-    "Equities":            ["Indices", "Equities"],
+    "Macro & Rates":     ["US Macro", "US Rates", "Euro Rates", "UK Rates", "Japan Macro", "Japan Rates", "US Credit"],
+    "Equities":          ["Indices", "Equities"],
     "FX & Commodities":  ["FX", "Commodities"],
 }
 
