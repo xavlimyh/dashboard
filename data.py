@@ -31,6 +31,7 @@ TICKERS = [
     ("T5YIFR",              "5Y5Y Forward Inflation Expectation Rate",                    "pct_1dp",        "US Macro",       5, -1,  "fred"),
     ("UNRATE",              "Unemployment Rate",                                          "pct_1dp",        "US Macro",       1, -1,  "fred"),
     ("PAYEMS",              "Non-farm Payrolls",                                          "kppl",           "US Macro",       1,  1,  "fred"),
+    ("CES0500000003",       "Wage Growth",                                                "pct_1dp",        "US Macro",       1,  1,  "fred"),
     ("DFEDTARU",            "Fed Funds Rate",                                             "range",          "US Rates",       1, -1,  "fred"),
     ("SOFR",                "SOFR",                                                       "pct_2dp",        "US Rates",       5,  1,  "fred"),
     ("DGS1MO",              "1mo Treasury",                                               "pct_2dp",        "US Rates",       5,  -1,  "fred"),
@@ -104,7 +105,8 @@ TICKERS = [
     ("GC=F",                "CME Gold Futures",                                           "idx",            "Commodities",    5,  1,  "yf"),
     ("SI=F",                "CME Silver Futures",                                         "idx_twodp",      "Commodities",    5,  1,  "yf"),
     ("BZ=F",                "Brent Crude Oil Futures",                                    "idx_twodp",      "Commodities",    5,  1,  "yf"),
-    ("CL=F",                "WTI Crude Oil Futures",                                      "idx_twodp",      "Commodities",    5,  1,  "yf")
+    ("CL=F",                "WTI Crude Oil Futures",                                      "idx_twodp",      "Commodities",    5,  1,  "yf"),
+    ("NGU26.NYM",           "Henry Hub Natural Gas Futures",                                      "idx_twodp",      "Commodities",    5,  1,  "yf"),    
 ]
 
 def get_fred(_fred_client, fred_ids):
