@@ -46,6 +46,7 @@ def build_ticker_rows(df: pd.DataFrame, tickers: list = None) -> str:
     df["PCEPI"]  = pct_change(df["PCEPI"], 12)
     df["PCEPILFE"]  = pct_change(df["PCEPILFE"], 12)
     df["PAYEMS"]  = df["PAYEMS"].dropna().diff(1)
+    df["CES0500000003"]  = pct_change(df["CES0500000003"], 12)
                 
     LOOKBACK = 1260
 
