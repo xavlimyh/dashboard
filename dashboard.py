@@ -39,6 +39,7 @@ def build_ticker_rows(df: pd.DataFrame, tickers: list = None) -> str:
     df["UK2S10S"]    = df["GB10Y"] - df["GB2Y"]
     df["DE2S10S"]    = df["DE10Y"] - df["DE2Y"]
     df["JPNRGDPEXP"] = ((1 + pct_change(df["JPNRGDPEXP"], 3) / 100) ** 4 - 1) * 100
+    df["0003427113"] = pct_change(df["0003427113"], 12)
     df["JP2S10S"]     = df["JP10Y"] - df["JP2Y"]
     df["JP2S30S"]     = df["JP30Y"] - df["JP2Y"]
     df["CPIAUCSL"] = pct_change(df["CPIAUCSL"], 12)
@@ -47,6 +48,7 @@ def build_ticker_rows(df: pd.DataFrame, tickers: list = None) -> str:
     df["PCEPILFE"]  = pct_change(df["PCEPILFE"], 12)
     df["PAYEMS"]  = df["PAYEMS"].dropna().diff(1)
     df["CES0500000003"]  = pct_change(df["CES0500000003"], 12)
+
                 
     LOOKBACK = 1260
 
