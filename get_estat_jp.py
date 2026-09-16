@@ -1,6 +1,8 @@
 import requests
 import pandas as pd
 
+
+symbols = ["0004052037"]
 def get_estat_jp_series(symbols):
 
     url = "http://api.e-stat.go.jp/rest/3.0/app/json/getStatsData"
@@ -26,6 +28,7 @@ def get_estat_jp_series(symbols):
 
         stat_data = json_data["GET_STATS_DATA"]["STATISTICAL_DATA"]
         class_info = stat_data["CLASS_INF"]
+        print(class_info)
 
         # Observations
         values = stat_data["DATA_INF"]["VALUE"]
@@ -41,11 +44,11 @@ def get_estat_jp_series(symbols):
         )
 
         # Filters for CPI
-        if sym == "0003427113":
+        if sym == "0004052037":
             df = df[
                 (df["@area"] == "00000") &                       # All Japan
                 (df["@tab"] == "1") &                            # 1 = Index, 2 = change from prev period, 3 = YoY change
-                (df["@cat01"] == "0001")                         # 0001 = All items, 0902 = All items less fresh food
+                (df["@cat01"] == "0001")                         # 0001 = All items
             ]
 
         # Filters for unemployment
@@ -67,5 +70,7 @@ def get_estat_jp_series(symbols):
         df_merged = df_merged.merge(df, on="Date", how="outer")
 
     df_merged.set_index('Date', inplace=True)
-
+    print(df_merged)
     return df_merged
+
+get_estat_jp_series(symbols)
