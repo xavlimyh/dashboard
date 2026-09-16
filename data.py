@@ -8,6 +8,7 @@ import yfinance as yf
 from get_boe import get_boe_series
 from get_cnbc import get_cnbc_series
 from get_boj import get_boj_series
+from get_estat_jp import get_estat_jp_series
 
 # Load variables from .env into the system environment
 load_dotenv()
@@ -61,7 +62,9 @@ TICKERS = [
     ("GB20Y",               "20Y Gilt",                                                   "pct_2dp",        "UK Rates",       5, -1,  "cnbc"),
     ("GB30Y",               "30Y Gilt",                                                   "pct_2dp",        "UK Rates",       5, -1,  "cnbc"),
     ("UK2S10S",             "UK 2s10s Spread",                                            "pct_2dp",        "UK Rates",       5, -1,  "derived"),
-    ("JPNRGDPEXP",          "Japan Real GDP QoQ",                                         "pct_1dp",        "Japan Macro",    1,  1,  "fred"),    
+    ("JPNRGDPEXP",          "Japan Real GDP QoQ",                                         "pct_1dp",        "Japan Macro",    1,  1,  "fred"),
+    ("0003427113",          "Japan CPI YoY",                                              "pct_1dp",        "Japan Macro",    1,  -1,  "estat_jp"),
+    ("0003005865",          "Japan Unemployment Rate",                                    "pct_1dp",        "Japan Macro",    1,  -1,  "estat_jp"),           
     ("FM01_STRDCLUCON",     "Japan Uncollateralised Overnight Call Rate",                 "pct_2dp",        "Japan Rates",    5, -1,  "boj"),
     ("JP3M",                "3mo Japan Government Bond",                                  "pct_2dp",        "Japan Rates",    5, -1,  "cnbc"),
     ("JP2Y",                "2Y Japan Government Bond",                                   "pct_2dp",        "Japan Rates",    5, -1,  "cnbc"),
@@ -168,6 +171,10 @@ def get_boj(boj_ids):
     print(f"{len(boj_ids)} BoJ queries complete.")
     return get_boj_series(boj_ids)
 
+def get_estat_jp(estat_jp_ids):
+    print(f"{len(estat_jp_ids)} BoJ queries complete.")
+    return get_estat_jp_series(estat_jp_ids)
+
 # @st.cache_data(ttl=3600)
 def load_all_data():
     fred_ids = [sym for sym, name, fmt, section, prev_offset, direction, source in TICKERS if source == "fred"]
@@ -175,7 +182,8 @@ def load_all_data():
     boe_ids = [sym for sym, name, fmt, section, prev_offset, direction, source in TICKERS if source == "boe"]
     cnbc_ids = [sym for sym, name, fmt, section, prev_offset, direction, source in TICKERS if source == "cnbc"]
     boj_ids = [sym for sym, name, fmt, section, prev_offset, direction, source in TICKERS if source == "boj"]
-    id_count = len(fred_ids) + len(yf_ids) + len(boe_ids) + len(cnbc_ids) + len(boj_ids)
+    estat_jp_ids = [sym for sym, name, fmt, section, prev_offset, direction, source in TICKERS if source == "estat_jp"]
+    id_count = len(fred_ids) + len(yf_ids) + len(boe_ids) + len(cnbc_ids) + len(boj_ids) + len(estat_jp_ids)
 
     print(id_count, "tickers queried.")
     fred_df = get_fred(fred, fred_ids)
@@ -183,10 +191,11 @@ def load_all_data():
     boe_df = get_boe(boe_ids)
     cnbc_df = get_cnbc(cnbc_ids)
     boj_df = get_boj(boj_ids)
+    estat_jp_df = get_estat_jp(estat_jp_ids)
     print("All data sources queried.\nLoading dashboard...")
 
-    data_frames = [fred_df, yf_df, boe_df, cnbc_df, boj_df]
-    for name, df in [("fred", fred_df), ("yf", yf_df), ("boe", boe_df), ("cnbc", cnbc_df), ("boj", boj_df)]:
+    data_frames = [fred_df, yf_df, boe_df, cnbc_df, boj_df, estat_jp_df]
+    for name, df in [("fred", fred_df), ("yf", yf_df), ("boe", boe_df), ("cnbc", cnbc_df), ("boj", boj_df), ("estat_jp", estat_jp_df)]:
         print(f"{name}: dtype={df.index.dtype}, tz={getattr(df.index, 'tz', None)}, sample={df.index[:2].tolist()}")
     df_merged = reduce(lambda left,right: left.join(right), data_frames)
     print(df_merged)
