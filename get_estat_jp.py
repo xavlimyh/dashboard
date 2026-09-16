@@ -59,12 +59,13 @@ def get_estat_jp_series(symbols):
             ]
 
         df = df[["Date", "$"]].rename(columns={"$": sym})  # Keep only Date and relevant column
-
+        df[sym] = pd.to_numeric(df[sym], errors="coerce") # Ensure numeric
         dfs.append(df)
 
     df_merged = dfs[0]
-
     for df in dfs[1:]:
         df_merged = df_merged.merge(df, on="Date", how="outer")
+
+    df_merged.set_index('Date', inplace=True)
 
     return df_merged

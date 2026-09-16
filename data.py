@@ -63,7 +63,7 @@ TICKERS = [
     ("GB30Y",               "30Y Gilt",                                                   "pct_2dp",        "UK Rates",       5, -1,  "cnbc"),
     ("UK2S10S",             "UK 2s10s Spread",                                            "pct_2dp",        "UK Rates",       5, -1,  "derived"),
     ("JPNRGDPEXP",          "Japan Real GDP QoQ",                                         "pct_1dp",        "Japan Macro",    1,  1,  "fred"),
-    ("0003427113",          "Japan CPI YoY",                                              "pct_1dp",        "Japan Macro",    1,  -1,  "estat_jp"),
+    ("0004052037",          "Japan CPI YoY",                                              "pct_1dp",        "Japan Macro",    1,  -1,  "estat_jp"),
     ("0003005865",          "Japan Unemployment Rate",                                    "pct_1dp",        "Japan Macro",    1,  -1,  "estat_jp"),           
     ("FM01_STRDCLUCON",     "Japan Uncollateralised Overnight Call Rate",                 "pct_2dp",        "Japan Rates",    5, -1,  "boj"),
     ("JP3M",                "3mo Japan Government Bond",                                  "pct_2dp",        "Japan Rates",    5, -1,  "cnbc"),
@@ -140,25 +140,6 @@ def get_yf(yf_ids):
     yf_df_close = yf_df_all["Close"]
     return yf_df_close
 
-def get_econ_cal():                      # Uses yfinance, start date by default set as today, end date is (today+7 days)
-    all_pages = []
-    cal = pd.DataFrame()
-    empty = False
-    offset = 0
-    while empty == False:
-        page = yf.Calendars().get_economic_events_calendar(limit=100, offset=offset)
-        if page.empty:
-            empty = True
-        else:
-            offset += 100
-            all_pages.append(page)
-    cal = pd.concat(all_pages)
-    cal["Event"] = cal.index
-    cal = cal.set_index("Event Time")
-    cal = cal.sort_index()
-    cal = cal[["Event", "Region", "For", "Actual", "Expected", "Last", "Revised"]]
-    return cal
-
 def get_cnbc(cnbc_ids):
     print(f"{len(cnbc_ids)} CNBC queries complete.")
     return get_cnbc_series(cnbc_ids)
@@ -172,7 +153,7 @@ def get_boj(boj_ids):
     return get_boj_series(boj_ids)
 
 def get_estat_jp(estat_jp_ids):
-    print(f"{len(estat_jp_ids)} BoJ queries complete.")
+    print(f"{len(estat_jp_ids)} E-Stat Japan queries complete.")
     return get_estat_jp_series(estat_jp_ids)
 
 # @st.cache_data(ttl=3600)

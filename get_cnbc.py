@@ -17,6 +17,14 @@ def get_chart_data(symbol, time_range="5Y"):
     response = requests.get(url, params=params, headers=headers)
     data = response.json()["data"]["chartData"]["priceBars"]
     df = pd.DataFrame(data)
+    if df.empty:
+        raise ValueError(f"{symbol}: CNBC returned no price data")
+
+    if "tradeTime" not in df.columns:
+        raise ValueError(
+            f"{symbol}: 'tradeTime' not found. "
+            f"Columns returned: {df.columns.tolist()}"
+        )
     df["Date"] = pd.to_datetime(df["tradeTime"], format="%Y%m%d%H%M%S").dt.date
     df = df[["Date", "open", "high", "low", "close", "volume"]]
     
