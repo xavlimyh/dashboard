@@ -13,7 +13,7 @@ from get_estat_jp import get_estat_jp_series
 # Load variables from .env into the system environment
 load_dotenv()
 
-# Retrieve the key
+# Retrieve FRED API key
 api_key = os.getenv('FRED_API_KEY')
 
 # Initialize the FRED client
