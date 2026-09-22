@@ -12,7 +12,7 @@ TODAY = date.today()
 CHART_START_DATE = (TODAY - relativedelta(month=1, day=1))   # Starts chart on 1st Jan of the current year 
 
 # ── Data (cached) ────────────────────────────────────────────────────────────
-@st.cache_data(ttl=3600)
+# @st.cache_data(ttl=3600)
 def get_data():
     return load_all_data()
 
