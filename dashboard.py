@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 import streamlit as st
-from data import load_all_data, TICKERS
+from data import load_all_data, main_tickers
 
 # python -m streamlit run C:\Users\xavie\NUS\Coding\Dashboard\dashboard.py --server.runOnSave true
 
@@ -12,9 +12,9 @@ TODAY = date.today()
 CHART_START_DATE = (TODAY - relativedelta(month=1, day=1))   # Starts chart on 1st Jan of the current year 
 
 # ── Data (cached) ────────────────────────────────────────────────────────────
-# @st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600)
 def get_data():
-    return load_all_data()
+    return load_all_data(main_tickers)
 
 combined_df = get_data()
 print(combined_df.notna().sum().to_string())
@@ -54,7 +54,7 @@ def build_ticker_rows(df: pd.DataFrame, tickers: list = None) -> str:
     LOOKBACK = 1260
 
     if tickers is None:
-        tickers = TICKERS
+        tickers = main_tickers
 
     YC_LABELS = ["1M", "3M", "6M", "1Y", "2Y", "5Y", "7Y", "10Y", "20Y", "30Y"]
     YC_COLS   = ["DGS1MO", "DGS3MO", "DGS6MO", "DGS1", "DGS2", "DGS5", "DGS7", "DGS10", "DGS20", "DGS30"]
@@ -949,7 +949,7 @@ PAGE_SECTIONS = {
 # ── Shared page renderer ──────────────────────────────────────────────────────
 def render_page(page_title: str):
     sections = PAGE_SECTIONS[page_title]
-    page_tickers = [t for t in TICKERS if t[3] in sections]
+    page_tickers = [t for t in main_tickers if t[3] in sections]
 
     st.markdown("""
     <style>

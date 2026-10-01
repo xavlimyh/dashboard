@@ -22,7 +22,7 @@ if api_key:
 else:
     raise ValueError("FRED_API_KEY not found in environment variables.")
 
-TICKERS = [
+main_tickers = [
 #   (sym,                   name,                                                         fmt,              section,          prev_offset, direction, source)
     ("A191RL1Q225SBEA",     "Real GDP QoQ",                                               "pct_1dp",        "US Macro",       1,  1,  "fred"),
     ("CPIAUCSL",            "CPI YoY",                                                    "pct_1dp",        "US Macro",       1, -1,  "fred"),
@@ -118,7 +118,7 @@ def get_fred(_fred_client, fred_ids):
     for code in fred_ids:
         for attempt in range(3):
             try:
-                series = fred.get_series(code)
+                series = _fred_client.get_series(code)
                 series_titled = series.rename(code).to_frame()
                 df.append(series_titled)
                 print(code, "fetched.", end=' ')
@@ -136,7 +136,7 @@ def get_fred(_fred_client, fred_ids):
     return fred_df
 
 def get_yf(yf_ids):
-    yf_df_all = yf.download(yf_ids, period="5y")
+    yf_df_all = yf.download(yf_ids, period="10y")
     print(f"{len(yf_ids)} Yahoo Finance queries complete.")
     yf_df_close = yf_df_all["Close"]
     return yf_df_close
@@ -158,28 +158,35 @@ def get_estat_jp(estat_jp_ids):
     return get_estat_jp_series(estat_jp_ids)
 
 # @st.cache_data(ttl=3600)
-def load_all_data():
-    fred_ids = [sym for sym, name, fmt, section, prev_offset, direction, source in TICKERS if source == "fred"]
-    yf_ids = [sym for sym, name, fmt, section, prev_offset, direction, source in TICKERS if source == "yf"]
-    boe_ids = [sym for sym, name, fmt, section, prev_offset, direction, source in TICKERS if source == "boe"]
-    cnbc_ids = [sym for sym, name, fmt, section, prev_offset, direction, source in TICKERS if source == "cnbc"]
-    boj_ids = [sym for sym, name, fmt, section, prev_offset, direction, source in TICKERS if source == "boj"]
-    estat_jp_ids = [sym for sym, name, fmt, section, prev_offset, direction, source in TICKERS if source == "estat_jp"]
-    id_count = len(fred_ids) + len(yf_ids) + len(boe_ids) + len(cnbc_ids) + len(boj_ids) + len(estat_jp_ids)
+def load_all_data(tickers):
+    source_funcs = {
+        "fred": lambda ids: get_fred(fred, ids),
+        "yf": get_yf,
+        "boe": get_boe,
+        "cnbc": get_cnbc,
+        "boj": get_boj,
+        "estat_jp": get_estat_jp,
+    }
 
-    print(id_count, "tickers queried.")
-    fred_df = get_fred(fred, fred_ids)
-    yf_df = get_yf(yf_ids)
-    boe_df = get_boe(boe_ids)
-    cnbc_df = get_cnbc(cnbc_ids)
-    boj_df = get_boj(boj_ids)
-    estat_jp_df = get_estat_jp(estat_jp_ids)
-    print("All data sources queried.\nLoading dashboard...")
+    data_frames = []
 
-    data_frames = [fred_df, yf_df, boe_df, cnbc_df, boj_df, estat_jp_df]
-    for name, df in [("fred", fred_df), ("yf", yf_df), ("boe", boe_df), ("cnbc", cnbc_df), ("boj", boj_df), ("estat_jp", estat_jp_df)]:
-        print(f"{name}: dtype={df.index.dtype}, tz={getattr(df.index, 'tz', None)}, sample={df.index[:2].tolist()}")
-    df_merged = reduce(lambda left,right: left.join(right), data_frames)
-    print(df_merged)
+    for source, func in source_funcs.items():
+        ids = [
+            sym for sym, name, fmt, section, prev_offset, direction, src
+            in tickers
+            if src == source
+        ]
+
+        if ids:  # only call the function if there are tickers
+            df = func(ids)
+            data_frames.append(df)
+
+    if not data_frames:
+        return pd.DataFrame()
+
+    df_merged = reduce(
+        lambda left, right: left.join(right, how="outer"),
+        data_frames
+    )
 
     return df_merged

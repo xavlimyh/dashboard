@@ -98,7 +98,5 @@ def get_estat_jp_series(symbols):
         df_merged = df_merged.merge(df, on="Date", how="outer")
 
     df_merged.set_index('Date', inplace=True)
-    print(df_merged)
     return df_merged
 
-get_estat_jp_series(test_symbols)
